@@ -1,6 +1,5 @@
 use crate::controller::*;
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::*;
 
 /// The [character controller](CharacterController) plugin. Necessary to have the character controller
 /// work.
@@ -21,20 +20,28 @@ impl Default for WanderlustPlugin {
     }
 }
 
+#[derive(SystemSet, Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct WanderlustSet;
+
 impl Plugin for WanderlustPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<ControllerInput>()
             .register_type::<Option<Vec3>>();
 
         if self.tweaks {
-            app.add_systems(Startup, setup_physics_context);
+            app.add_systems(Startup, crate::backend::setup_physics_context);
         }
+
+        #[cfg(feature = "rapier3d")]
+        app.configure_set(Update, WanderlustSet.before(bevy_rapier3d::prelude::PhysicsSet::SyncBackend));
+        #[cfg(feature = "rapier2d")]
+        app.configure_set(Update, WanderlustSet.before(bevy_rapier2d::prelude::PhysicsSet::SyncBackend));
 
         app.add_systems(
             Update,
             (
-                crate::get_mass_from_rapier,
-                crate::get_velocity_from_rapier,
+                crate::backend::get_mass_from_backend,
+                crate::backend::get_velocity_from_backend,
                 find_ground,
                 determine_groundedness,
                 gravity_force,
@@ -43,11 +50,11 @@ impl Plugin for WanderlustPlugin {
                 upright_force,
                 jump_force,
                 accumulate_forces,
-                crate::apply_forces,
-                crate::apply_ground_forces,
+                crate::backend::apply_forces,
+                crate::backend::apply_ground_forces,
             )
+                .in_set(WanderlustSet)
                 .chain()
-                .before(PhysicsSet::SyncBackend),
         );
 
         #[cfg(feature = "debug-lines")]
@@ -59,17 +66,4 @@ impl Plugin for WanderlustPlugin {
             }
         });
     }
-}
-
-/// *Note: Most users will not need to use this directly. Use [`WanderlustPlugin`](crate::plugins::WanderlustPlugin) instead.
-/// Alternatively, if one only wants to disable the system, use [`WanderlustPhysicsTweaks`](WanderlustPhysicsTweaks).*
-///
-/// This system adds some tweaks to rapier's physics settings that make the character controller behave better.
-pub fn setup_physics_context(mut ctx: ResMut<RapierContext>) {
-    let params = &mut ctx.integration_parameters;
-    // This prevents any noticeable jitter when running facefirst into a wall.
-    params.erp = 0.99;
-    // This prevents (most) noticeable jitter when running facefirst into an inverted corner.
-    params.max_velocity_iterations = 16;
-    // TODO: Fix jitter that occurs when running facefirst into a normal corner.
 }

@@ -11,10 +11,9 @@ mod physics;
 mod plugins;
 mod spring;
 
-#[cfg(feature = "rapier")]
-mod rapier;
+mod backend;
 
 pub use {
-    bundles::ControllerBundle, controller::*, physics::*, plugins::WanderlustPlugin, rapier::*,
+    bundles::ControllerBundle, controller::*, physics::*, plugins::WanderlustPlugin,
     spring::Spring,
 };
