@@ -19,8 +19,8 @@ rapier = []
 rapier3d = ["rapier", "bevy_rapier3d"]
 rapier2d = ["rapier", "bevy_rapier2d"]
 xpbd = []
-xpbd_3d = ["xpbd", "bevy_xpbd_3d"]
-xpbd_2d = ["xpbd", "bevy_xpbd_2d"]
+xpbd3d = ["xpbd", "bevy_xpbd_3d"]
+xpbd2d = ["xpbd", "bevy_xpbd_2d"]
 
 [dependencies]
 bevy = { version = "0.11", default-features = false, features = [

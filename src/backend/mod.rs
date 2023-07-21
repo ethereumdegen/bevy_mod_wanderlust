@@ -1,26 +1,56 @@
-
+use bevy::{
+    utils::HashSet,
+    prelude::*
+};
 
 #[cfg(feature = "rapier")]
 mod rapier;
 #[cfg(feature = "rapier")]
 pub use rapier::{
-    setup_physics_context,
-    apply_forces,
-    apply_ground_forces,
-    get_velocity_from_rapier as get_velocity_from_backend,
-    get_mass_from_rapier as get_mass_from_backend,
+    //apply_forces,
+    //apply_ground_forces,
+    //cast_ray,
+    //cast_shape,
+    //setup_physics_context,
     RapierPhysicsBundle as BackendPhysicsBundle,
+    SpatialQuery,
+    Velocity,
+    Mass,
 };
 
-
 #[cfg(feature = "xpbd")]
-mod rapier;
+mod xpbd;
 #[cfg(feature = "xpbd")]
 pub use xpbd::{
-    setup_physics_context,
     apply_forces,
     apply_ground_forces,
-    get_velocity_from_xpbd as get_velocity_from_backend,
-    get_mass_from_xpbd as get_mass_from_backend,
+    cast_ray,
+    //cast_shape,
+    setup_physics_context,
+    SpatialQuery,
     XpbdPhysicsBundle as BackendPhysicsBundle,
+    Velocity,
+    Mass,
 };
+
+#[derive(Debug, Copy, Clone, Reflect)]
+pub struct RayCastResult {
+    pub entity: Entity,
+    pub toi: f32,
+    pub normal: Vec3,
+    pub point: Vec3,
+}
+
+#[derive(Debug, Copy, Clone, Reflect)]
+pub struct ShapeCastResult {
+    pub entity: Entity,
+    pub toi: f32,
+    pub normal1: Vec3,
+    pub normal2: Vec3,
+    pub point1: Vec3,
+    pub point2: Vec3,
+}
+
+pub struct Filter {
+    pub exclude: HashSet<Entity>,
+}

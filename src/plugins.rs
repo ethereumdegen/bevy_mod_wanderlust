@@ -33,15 +33,19 @@ impl Plugin for WanderlustPlugin {
         }
 
         #[cfg(feature = "rapier3d")]
-        app.configure_set(Update, WanderlustSet.before(bevy_rapier3d::prelude::PhysicsSet::SyncBackend));
+        app.configure_set(
+            Update,
+            WanderlustSet.before(bevy_rapier3d::prelude::PhysicsSet::SyncBackend),
+        );
         #[cfg(feature = "rapier2d")]
-        app.configure_set(Update, WanderlustSet.before(bevy_rapier2d::prelude::PhysicsSet::SyncBackend));
+        app.configure_set(
+            Update,
+            WanderlustSet.before(bevy_rapier2d::prelude::PhysicsSet::SyncBackend),
+        );
 
         app.add_systems(
             Update,
             (
-                crate::backend::get_mass_from_backend,
-                crate::backend::get_velocity_from_backend,
                 find_ground,
                 determine_groundedness,
                 gravity_force,
@@ -54,7 +58,7 @@ impl Plugin for WanderlustPlugin {
                 crate::backend::apply_ground_forces,
             )
                 .in_set(WanderlustSet)
-                .chain()
+                .chain(),
         );
 
         #[cfg(feature = "debug-lines")]

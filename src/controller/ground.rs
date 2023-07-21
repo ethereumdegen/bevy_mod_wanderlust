@@ -114,8 +114,8 @@ pub fn find_ground(
         &mut GroundCast,
     )>,
 
-    velocities: Query<&Velocity>,
-    masses: Query<&ReadMassProperties>,
+    velocities: Query<Velocity>,
+    masses: Query<Mass>,
     globals: Query<&GlobalTransform>,
     colliders: Query<&Collider>,
 
@@ -134,6 +134,7 @@ pub fn find_ground(
             let shape = &caster.cast_collider;
             let predicate =
                 |collider| collider != entity && !caster.exclude_from_ground.contains(&collider);
+                /*
             let filter = QueryFilter::new().exclude_sensors().predicate(&predicate);
 
             ground_cast(
@@ -147,6 +148,7 @@ pub fn find_ground(
                 caster.cast_length,
                 filter,
             )
+             */
         } else {
             caster.skip_ground_check_timer = (caster.skip_ground_check_timer - dt).max(0.0);
             None
@@ -157,9 +159,9 @@ pub fn find_ground(
                 let ground_entity = ctx.collider_parent(entity).unwrap_or(entity);
 
                 let mass = if let Ok(mass) = masses.get(ground_entity) {
-                    mass.0.clone()
+                    mass.mass()
                 } else {
-                    MassProperties::default()
+                    Mass::default()
                 };
 
                 let local_com = mass.local_center_of_mass;
@@ -211,13 +213,6 @@ pub fn determine_groundedness(mut query: Query<(&Float, &GroundCast, &mut Ground
     }
 }
 
-#[derive(Default, Debug, Copy, Clone, Reflect)]
-pub struct CastResult {
-    pub toi: f32,
-    pub normal: Vec3,
-    pub witness: Vec3,
-}
-
 impl From<Toi> for CastResult {
     fn from(toi: Toi) -> Self {
         Self {
@@ -239,7 +234,7 @@ impl From<RayIntersection> for CastResult {
 }
 
 fn ground_cast(
-    ctx: &RapierContext,
+    spatial_query: &SpatialQuery,
     colliders: &Query<&Collider>,
     globals: &Query<&GlobalTransform>,
     mut shape_pos: Vec3,
@@ -250,13 +245,15 @@ fn ground_cast(
     filter: QueryFilter,
 ) -> Option<(Entity, CastResult)> {
     for _ in 0..12 {
-        if let Some((entity, toi)) =
-            ctx.cast_shape(shape_pos, shape_rot, shape_vel, shape, max_toi, filter)
+        if let Some((entity, rayhit)) =
+            cast_shape(spatial_query, shape_pos, shape_rot, shape_vel, shape, max_toi, filter)
         {
+            /*
             if toi.status != TOIStatus::Penetrating {
                 return Some((entity, toi.into()));
-            }
+            } */
 
+            /*
             match (globals.get(entity), colliders.get(entity)) {
                 (Ok(ground_global), Ok(ground_collider)) => {
                     let cast_iso = Isometry3 {
@@ -287,6 +284,8 @@ fn ground_cast(
                 }
                 _ => {}
             };
+            */
+            return None;
         } else {
             return None;
         }
@@ -299,8 +298,8 @@ fn ground_cast(
     shape_pos = shape_pos + shape_vel * offset;
 
     /*ctx.cast_ray_and_get_normal(shape_pos, shape_vel, max_toi, true, filter)
-        .map(|(entity, inter)| (entity, inter.into()))*/
-        None
+    .map(|(entity, inter)| (entity, inter.into()))*/
+    None
 }
 
 /*

@@ -60,7 +60,9 @@ pub fn movement_force(
 
         let Some(ground) = cast.last() else { continue };
         let ground_angle = ground.cast.normal.angle_between(gravity.up_vector);
-        let slipping = (ground.cast.normal.length() > 0.0 && ground_angle > ground_caster.max_ground_angle) || ground.cast.normal.length() == 0.0;
+        let slipping = (ground.cast.normal.length() > 0.0
+            && ground_angle > ground_caster.max_ground_angle)
+            || ground.cast.normal.length() == 0.0;
         if slipping {
             if let GroundCast::Touching(ground) = cast {
                 let mut slip_vector = ground.cast.normal.reject_from_normalized(gravity.up_vector);
