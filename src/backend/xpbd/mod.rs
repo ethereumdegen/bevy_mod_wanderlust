@@ -13,6 +13,8 @@ pub use mass::*;
 mod velocity;
 pub use velocity::*;
 
+pub use xpbd::prelude::Collider;
+
 /// Contains common physics settings for character controllers.
 #[derive(Bundle)]
 pub struct XpbdPhysicsBundle {

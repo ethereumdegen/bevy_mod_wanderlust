@@ -12,9 +12,10 @@ mod mass;
 pub use mass::*;
 mod velocity;
 pub use velocity::*;
-
 mod query;
 pub use query::*;
+
+pub use rapier::prelude::Collider;
 
 /*
 /// Apply forces to the controller to make it float, move, jump, etc.

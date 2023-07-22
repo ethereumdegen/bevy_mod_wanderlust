@@ -7,6 +7,7 @@ mod movement;
 mod orientation;
 
 use crate::physics::*;
+use crate::backend::*;
 use crate::Spring;
 
 pub use {gravity::*, ground::*, input::*, movement::*, orientation::*};
@@ -105,7 +106,7 @@ pub fn accumulate_forces(
         &JumpForce,
         &GravityForce,
         &GroundCast,
-        &ControllerMass,
+        Mass,
     )>,
 ) {
     for (
@@ -138,7 +139,7 @@ pub fn accumulate_forces(
                 .inverse()
                 .transform_point3(ground.cast.witness);
             ground_force.linear = opposing_force;
-            ground_force.angular = (point - mass.com).cross(opposing_force);
+            ground_force.angular = (point - mass.local_center_of_mass()).cross(opposing_force);
 
             #[cfg(feature = "debug_lines")]
             {

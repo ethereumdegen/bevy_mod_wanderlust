@@ -1,6 +1,7 @@
 use crate::controller::*;
 use bevy::utils::HashSet;
-use bevy_rapier3d::{na::Isometry3, prelude::*};
+
+use crate::backend::Collider;
 
 /// How to detect if something below the controller is suitable
 /// for standing on.
@@ -44,14 +45,16 @@ impl Default for GroundCaster {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Ground {
     /// Entity found in ground cast.
     pub entity: Entity,
     /// Specifics of the ground contact.
     pub cast: CastResult,
-    /// Velocity at the point of contact.
-    pub point_velocity: Velocity,
+    /// Linear velocity at the point of contact.
+    pub linear_velocity: Vec3,
+    /// Angular velocity at the point of contact.
+    pub angular_velocity: Vec3, 
 }
 
 /// The cached ground cast. Contains the entity hit, the hit info, and velocity of the entity
@@ -119,7 +122,8 @@ pub fn find_ground(
     globals: Query<&GlobalTransform>,
     colliders: Query<&Collider>,
 
-    ctx: Res<RapierContext>,
+    //ctx: Res<RapierContext>,
+    spatial_query: SpatialQuery,
 
     mut ground_shape_casts: Local<Vec<(Entity, Toi)>>,
     mut ground_ray_casts: Local<Vec<(Entity, RayIntersection)>>,
@@ -132,13 +136,16 @@ pub fn find_ground(
             let cast_rotation = tf.to_scale_rotation_translation().1;
             let cast_direction = -gravity.up_vector;
             let shape = &caster.cast_collider;
-            let predicate =
-                |collider| collider != entity && !caster.exclude_from_ground.contains(&collider);
-                /*
-            let filter = QueryFilter::new().exclude_sensors().predicate(&predicate);
+            let mut exclude_set = HashSet::new();
+            exclude_set.insert(entity);
+            exclude_set.extend(caster.exclude_from_ground);
+
+            let filter = QueryFilter {
+                exclude: exclude_set,
+            };
 
             ground_cast(
-                &*ctx,
+                &spatial_query,
                 &colliders,
                 &globals,
                 cast_position,
@@ -148,7 +155,6 @@ pub fn find_ground(
                 caster.cast_length,
                 filter,
             )
-             */
         } else {
             caster.skip_ground_check_timer = (caster.skip_ground_check_timer - dt).max(0.0);
             None
@@ -158,33 +164,29 @@ pub fn find_ground(
             Some((entity, result)) => {
                 let ground_entity = ctx.collider_parent(entity).unwrap_or(entity);
 
-                let mass = if let Ok(mass) = masses.get(ground_entity) {
-                    mass.mass()
+                let (mass, local_com) = if let Ok(prop) = masses.get(ground_entity) {
+                    (prop.mass(), prop.local_center_of_mass())
                 } else {
-                    Mass::default()
+                    (0.0, Vec3::ZERO)
                 };
 
-                let local_com = mass.local_center_of_mass;
-
-                let ground_velocity = velocities
+                let (ground_linear_vel, ground_angular_vel) = velocities
                     .get(ground_entity)
-                    .copied()
-                    .unwrap_or(Velocity::default());
+                    .map(|velocity| (velocity.linear(), velocity.angular()))
+                .unwrap_or((Vec3::ZERO, Vec3::ZERO));
 
                 let global = globals
                     .get(ground_entity)
                     .unwrap_or(&GlobalTransform::IDENTITY);
                 let com = global.transform_point(local_com);
                 let velocity =
-                    ground_velocity.linvel + ground_velocity.angvel.cross(result.witness - com);
+                    ground_linear_vel + ground_angular_velocity.cross(result.point - com);
 
                 *cast = GroundCast::Touching(Ground {
                     entity: ground_entity,
                     cast: result,
-                    point_velocity: Velocity {
-                        linvel: velocity,
-                        angvel: ground_velocity.angvel,
-                    },
+                    linear_velocity: velocity,
+                    angular_velocity: ground_velocity.angvel,
                 });
             }
             None => {
@@ -213,26 +215,6 @@ pub fn determine_groundedness(mut query: Query<(&Float, &GroundCast, &mut Ground
     }
 }
 
-impl From<Toi> for CastResult {
-    fn from(toi: Toi) -> Self {
-        Self {
-            toi: toi.toi,
-            normal: toi.normal1,
-            witness: toi.witness1,
-        }
-    }
-}
-
-impl From<RayIntersection> for CastResult {
-    fn from(intersection: RayIntersection) -> Self {
-        Self {
-            toi: intersection.toi,
-            normal: intersection.normal,
-            witness: intersection.point,
-        }
-    }
-}
-
 fn ground_cast(
     spatial_query: &SpatialQuery,
     colliders: &Query<&Collider>,
@@ -246,7 +228,7 @@ fn ground_cast(
 ) -> Option<(Entity, CastResult)> {
     for _ in 0..12 {
         if let Some((entity, rayhit)) =
-            cast_shape(spatial_query, shape_pos, shape_rot, shape_vel, shape, max_toi, filter)
+            crate::backend::cast_shape(spatial_query, shape_pos, shape_rot, shape_vel, shape, max_toi, filter)
         {
             /*
             if toi.status != TOIStatus::Penetrating {

@@ -6,8 +6,8 @@
 #![doc = include_str!("../README.md")]
 
 //mod bundles;
-//mod controller;
-//mod physics;
+mod controller;
+mod physics;
 //mod plugins;
 mod spring;
 
