@@ -9,11 +9,12 @@ pub use bevy_xpbd_2d as xpbd;
 //use xpbd::prelude::*; 
 
 
-mod mass;
-pub use mass::*;
+pub mod mass;
+pub use mass::Mass;
+//pub use mass::*;
 
-mod velocity;
-pub use velocity::*;
+pub mod velocity;
+pub use velocity::Velocity;
 
 //pub use xpbd::prelude::{Collider,SpatialQueryFilter};
 

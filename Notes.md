@@ -1,3 +1,11 @@
+NOTES
+
+check on orientation inertia value matrices 
+
+
+
+
+
 This is inside of rapier geometry 
 
 

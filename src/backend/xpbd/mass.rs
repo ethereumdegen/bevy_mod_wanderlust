@@ -1,16 +1,24 @@
-
+/*
 use bevy::{
     ecs::query::WorldQuery,
      prelude::*,
 };
  use crate::backend::xpbd;
  
+*/
+ use bevy_xpbd_3d::prelude::{Mass as xpbd_Mass,Inertia,CenterOfMass};
+ 
+ //use crate::backend::xpbd::Mass as xpbd_Mass;
+use bevy::{
+    ecs::query::WorldQuery,
+     prelude::*,
+};
 
 #[derive(WorldQuery)]
 pub struct Mass {
-    mass: &'static xpbd::Mass,
-    inertia: &'static xpbd::Inertia,
-    center_of_mass: &'static xpbd::CenterOfMass,
+    mass: &'static  xpbd_Mass,
+    inertia: &'static Inertia,
+    center_of_mass: &'static CenterOfMass,
 }
 
 impl<'a> MassItem<'a> {
