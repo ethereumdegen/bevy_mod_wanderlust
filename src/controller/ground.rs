@@ -128,8 +128,8 @@ pub fn find_ground(
     //ctx: Res<RapierContext>,
     spatial_query: SpatialQuery,
 
-    mut ground_shape_casts: Local<Vec<(Entity, Toi)>>,
-    mut ground_ray_casts: Local<Vec<(Entity, RayIntersection)>>,
+  //  mut ground_shape_casts: Local<Vec<(Entity, Toi)>>,
+  //  mut ground_ray_casts: Local<Vec<(Entity, RayIntersection)>>,
 ) {
     let dt = ctx.integration_parameters.dt;
     for (entity, tf, gravity, mut caster, mut cast) in &mut casters {
@@ -189,7 +189,7 @@ pub fn find_ground(
                     entity: ground_entity,
                     cast: result,
                     linear_velocity: velocity,
-                    angular_velocity: ground_velocity.angvel,
+                    angular_velocity: ground_angular_vel ,
                 });
             }
             None => {
@@ -308,4 +308,64 @@ fn intersections_with_ray_cast(
         }
     }
 }
+*/
+
+/*
+/// Details about a shape/ray-cast.
+#[derive(Default, Debug, Copy, Clone, Reflect)]
+pub struct CastResult {
+    /// Time-of-impact to the other shape.
+    pub toi: f32,
+    /// Normal of the other shape.
+    pub normal: Vec3,
+    /// Witness point for the shape/ray cast.
+    pub point: Vec3,
+}
+
+
+impl CastResult {
+    /// Get the tangential normal biased downwards.
+    pub fn down_tangent(&self, up_vector: Vec3) -> Vec3 {
+        let (x, z) = self.normal.any_orthonormal_pair();
+        let projected_x = up_vector.project_onto(x);
+        let projected_z = up_vector.project_onto(z);
+        -(projected_x + projected_z)
+    }
+
+    /// Cast has a viable normal based on a max angle.
+    pub fn viable(&self, up_vector: Vec3, max_angle: f32) -> bool {
+        self.normal.angle_between(up_vector).abs() < max_angle
+    }
+}
+
+impl CastResult {
+    /// Use the first shape in the shape-cast as the cast result.
+    pub fn from_toi1(toi: Toi) -> Self {
+        Self {
+            toi: toi.toi,
+            normal: toi.normal1,
+            point: toi.witness1,
+        }
+    }
+
+    /// Use the second shape in the shape-cast as the cast result.
+    pub fn from_toi2(toi: Toi) -> Self {
+        Self {
+            toi: toi.toi,
+            normal: toi.normal2,
+            point: toi.witness2,
+        }
+    }
+}
+
+impl From<RayIntersection> for CastResult {
+    fn from(intersection: RayIntersection) -> Self {
+        Self {
+            toi: intersection.toi,
+            normal: intersection.normal,
+            point: intersection.point,
+        }
+    }
+}
+
 */
