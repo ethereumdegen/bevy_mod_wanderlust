@@ -55,9 +55,9 @@ pub fn apply_forces() {}
 pub fn apply_ground_forces() {}
 pub fn setup_physics_context() {}
 
-pub type SpatialQuery<'w, 's> = crate::xpbd::prelude::SpatialQuery<'w, 's>;
+pub type SpatialQuery<'w, 's> = bevy_xpbd_3d::prelude::SpatialQuery<'w, 's>;
 
-use crate::backend::query::{RayCastResult };
+use crate::backend::query::{RayCastResult, Filter};
 
 
 pub fn cast_ray(

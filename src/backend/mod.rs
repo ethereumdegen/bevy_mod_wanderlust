@@ -1,6 +1,6 @@
 use bevy::{
     utils::HashSet,
-    prelude::*
+   // prelude::*
 };
 
 pub mod query;
@@ -22,9 +22,13 @@ pub use rapier::{
 };
 
 #[cfg(feature = "xpbd")]
-mod xpbd;
+mod xpbd; 
+
+//#[cfg(feature = "xpbd")]
+//pub use  crate::backend::xpbd::{XpbdPhysicsBundle,Velocity} ;
+
 #[cfg(feature = "xpbd")]
-pub use bevy_xpbd_3d::{
+pub use crate::backend::xpbd::{
     apply_forces,
     apply_ground_forces,
     cast_ray,
