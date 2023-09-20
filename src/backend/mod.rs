@@ -3,6 +3,8 @@ use bevy::{
     prelude::*
 };
 
+pub mod query;
+
 #[cfg(feature = "rapier")]
 mod rapier;
 #[cfg(feature = "rapier")]

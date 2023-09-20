@@ -3,7 +3,7 @@ use bevy::utils::HashSet;
 
 use crate::backend::Collider;
 
- 
+  use crate::backend::query::QueryFilter;
 
 
 /// How to detect if something below the controller is suitable
