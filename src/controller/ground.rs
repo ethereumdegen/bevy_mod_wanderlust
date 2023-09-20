@@ -53,7 +53,7 @@ pub struct Ground {
     /// Entity found in ground cast.
     pub entity: Entity,
     /// Specifics of the ground contact.
-    pub cast: CastResult,
+    pub cast: RayCastResult,  //is this right ? 
     /// Linear velocity at the point of contact.
     pub linear_velocity: Vec3,
     /// Angular velocity at the point of contact.

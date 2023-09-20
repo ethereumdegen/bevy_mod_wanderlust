@@ -25,6 +25,9 @@ pub use bevy_xpbd_3d::prelude::Collider;
 mod context;
 pub use context::*;
 
+mod ground; 
+pub use ground::*;
+
 
 /// Contains common physics settings for character controllers.
 #[derive(Bundle)]
