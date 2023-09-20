@@ -37,6 +37,7 @@ bevy_rapier2d = { version = "0.22", default-features = false, features = [
 ], optional = true }
 bevy_xpbd_3d = { version = "0.2", optional = true }
 bevy_xpbd_2d = { version = "0.2", optional = true }
+nalgebra = "0.32.3"
 
 [dev-dependencies]
 bevy = "0.11"

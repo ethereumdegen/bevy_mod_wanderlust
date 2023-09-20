@@ -143,9 +143,9 @@ pub fn upright_force(
             
             //is this right !? 
             let damping = Vec3::new(
-                upright.spring.damp_coefficient(mass.inertia().x_axis.x),
-                upright.spring.damp_coefficient(mass.inertia().y_axis.y),
-                upright.spring.damp_coefficient(mass.inertia().z_axis.z),
+                upright.spring.damp_coefficient(mass.inertia().x),
+                upright.spring.damp_coefficient(mass.inertia().y),
+                upright.spring.damp_coefficient(mass.inertia().z),
             );
 
             let ground_rot = if let Some(ground) = ground_cast.last() {
