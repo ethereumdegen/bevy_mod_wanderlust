@@ -24,3 +24,28 @@ impl Default for ControllerPhysicsBundle {
         }
     }
 }
+
+
+/// Mass/inertia properties for controller.
+#[derive(Component, Clone, Default, Reflect)]
+#[reflect(Component, Default)]
+pub struct ControllerMass {
+    /// The mass of a character
+    pub mass: f32,
+    /// The rotational inertia of a character
+    pub inertia: Vec3,
+    /// The center of mass of a character
+    pub com: Vec3,
+}
+
+
+
+/// Current velocity of the controller.
+#[derive(Copy, Clone, Component, Default, Reflect)]
+#[reflect(Component, Default)]
+pub struct ControllerVelocity {
+    /// How fast this character is currently moving linearly in 3D space
+    pub linear: Vec3,
+    /// How fast this character is currently moving angularly in 3D space
+    pub angular: Vec3,
+}

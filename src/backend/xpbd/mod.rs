@@ -11,6 +11,7 @@ pub use bevy_xpbd_2d as xpbd;
 
 mod mass;
 pub use mass::*;
+
 mod velocity;
 pub use velocity::*;
 
