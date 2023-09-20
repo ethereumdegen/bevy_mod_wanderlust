@@ -17,7 +17,7 @@ pub use velocity::*;
 //pub use xpbd::prelude::{Collider,SpatialQueryFilter};
 
 use bevy_xpbd_3d::prelude::*;
-use bevy_xpbd_3d::prelude::Collider;
+pub use bevy_xpbd_3d::prelude::Collider;
 
 
 /// Contains common physics settings for character controllers.
@@ -57,7 +57,9 @@ pub fn setup_physics_context() {}
 
 pub type SpatialQuery<'w, 's> = bevy_xpbd_3d::prelude::SpatialQuery<'w, 's>;
 
-use crate::backend::query::{RayCastResult, Filter};
+use crate::backend::query::{RayCastResult, QueryFilter };
+
+ 
 
 
 pub fn cast_ray(
@@ -66,7 +68,7 @@ pub fn cast_ray(
     direction: Vec3,
     max_toi: f32,
     solid: bool,
-    filter: Filter,
+    filter: QueryFilter,
 ) -> Option<RayCastResult> {
     spatial_query.cast_ray(
         origin,
