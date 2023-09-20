@@ -15,6 +15,10 @@ pub use velocity::*;
 mod query;
 pub use query::*;
 
+mod context;
+pub use context::*;
+
+
 pub use rapier::prelude::Collider;
 
 /*

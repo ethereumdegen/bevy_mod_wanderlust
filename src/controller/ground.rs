@@ -3,7 +3,7 @@ use bevy::utils::HashSet;
 
 use crate::backend::Collider;
 
-  use crate::backend::query::QueryFilter;
+  use crate::backend::query::{QueryFilter, RayCastResult};
 
 
 /// How to detect if something below the controller is suitable
@@ -108,101 +108,7 @@ pub struct GroundForce {
     pub linear: Vec3,
     /// Change in angular velocity.
     pub angular: Vec3,
-}
-
-/// Performs groundcasting and updates controller state accordingly.
-pub fn find_ground(
-    mut casters: Query<(
-        Entity,
-        &GlobalTransform,
-        &Gravity,
-        &mut GroundCaster,
-        &mut GroundCast,
-    )>,
-
-    velocities: Query<Velocity>,
-    masses: Query<Mass>,
-    globals: Query<&GlobalTransform>,
-    colliders: Query<&Collider>,
-
-    //ctx: Res<RapierContext>,
-    spatial_query: SpatialQuery,
-
-  //  mut ground_shape_casts: Local<Vec<(Entity, Toi)>>,
-  //  mut ground_ray_casts: Local<Vec<(Entity, RayIntersection)>>,
-) {
-    let dt = ctx.integration_parameters.dt;
-    for (entity, tf, gravity, mut caster, mut cast) in &mut casters {
-        let casted = if caster.skip_ground_check_timer == 0.0 && !caster.skip_ground_check_override
-        {
-            let cast_position = tf.transform_point(caster.cast_origin);
-            let cast_rotation = tf.to_scale_rotation_translation().1;
-            let cast_direction = -gravity.up_vector;
-            let shape = &caster.cast_collider;
-            let mut exclude_set = HashSet::new();
-            exclude_set.insert(entity);
-            exclude_set.extend(caster.exclude_from_ground);
-
-            let filter = QueryFilter {
-                exclude: exclude_set,
-            };
-
-            ground_cast(
-                &spatial_query,
-                &colliders,
-                &globals,
-                cast_position,
-                cast_rotation,
-                cast_direction,
-                shape,
-                caster.cast_length,
-                filter,
-            )
-        } else {
-            caster.skip_ground_check_timer = (caster.skip_ground_check_timer - dt).max(0.0);
-            None
-        };
-
-        match casted {
-            Some((entity, result)) => {
-                let ground_entity = ctx.collider_parent(entity).unwrap_or(entity);
-
-                let (mass, local_com) = if let Ok(prop) = masses.get(ground_entity) {
-                    (prop.mass(), prop.local_center_of_mass())
-                } else {
-                    (0.0, Vec3::ZERO)
-                };
-
-                let (ground_linear_vel, ground_angular_vel) = velocities
-                    .get(ground_entity)
-                    .map(|velocity| (velocity.linear(), velocity.angular()))
-                .unwrap_or((Vec3::ZERO, Vec3::ZERO));
-
-                let global = globals
-                    .get(ground_entity)
-                    .unwrap_or(&GlobalTransform::IDENTITY);
-                let com = global.transform_point(local_com);
-                let velocity =
-                    ground_linear_vel + ground_angular_vel.cross(result.point - com);
-
-                *cast = GroundCast::Touching(Ground {
-                    entity: ground_entity,
-                    cast: result,
-                    linear_velocity: velocity,
-                    angular_velocity: ground_angular_vel ,
-                });
-            }
-            None => {
-                cast.into_last();
-            }
-        };
-
-        // If we hit something, just get back up instead of waiting.
-        if ctx.contacts_with(entity).next().is_some() {
-            caster.skip_ground_check_timer = 0.0;
-        }
-    }
-}
+} 
 
 pub fn determine_groundedness(mut query: Query<(&Float, &GroundCast, &mut Grounded)>) {
     for (float, cast, mut grounded) in &mut query {
@@ -228,7 +134,7 @@ fn ground_cast(
     shape: &Collider,
     max_toi: f32,
     filter: QueryFilter,
-) -> Option<(Entity, CastResult)> {
+) -> Option<(Entity, RayCastResult)> {
     for _ in 0..12 {
         if let Some((entity, rayhit)) =
             crate::backend::cast_shape(spatial_query, shape_pos, shape_rot, shape_vel, shape, max_toi, filter)
