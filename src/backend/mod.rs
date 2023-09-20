@@ -15,13 +15,14 @@ pub use rapier::{
     RapierPhysicsBundle as BackendPhysicsBundle,
     SpatialQuery,
     Velocity,
-    Mass,
+    Mass, 
+    Collider
 };
 
 #[cfg(feature = "xpbd")]
 mod xpbd;
 #[cfg(feature = "xpbd")]
-pub use xpbd::{
+pub use bevy_xpbd_3d::{
     apply_forces,
     apply_ground_forces,
     cast_ray,
@@ -31,4 +32,5 @@ pub use xpbd::{
     XpbdPhysicsBundle as BackendPhysicsBundle,
     Velocity,
     Mass,
+    Collider
 };

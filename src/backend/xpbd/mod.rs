@@ -6,14 +6,19 @@ pub use bevy_xpbd_3d as xpbd;
 #[cfg(feature = "xpbd_2d")]
 pub use bevy_xpbd_2d as xpbd;
 
-use xpbd::prelude::*;
+//use xpbd::prelude::*; 
+
 
 mod mass;
 pub use mass::*;
 mod velocity;
 pub use velocity::*;
 
-pub use xpbd::prelude::Collider;
+//pub use xpbd::prelude::{Collider,SpatialQueryFilter};
+
+use bevy_xpbd_3d::prelude::*;
+use bevy_xpbd_3d::prelude::Collider;
+
 
 /// Contains common physics settings for character controllers.
 #[derive(Bundle)]

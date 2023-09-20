@@ -3,12 +3,13 @@ use bevy::{
     prelude::*,
     ecs::query::WorldQuery,
 };
-use super::xpbd;
+use crate::backend::xpbd;
+
 
 #[derive(WorldQuery)]
 pub struct Velocity {
-    linear: &'static xpbd::prelude::LinearVelocity,
-    angular: &'static xpbd::prelude::AngularVelocity,
+    linear: &'static xpbd::LinearVelocity,
+    angular: &'static xpbd::AngularVelocity,
 }
 
 impl<'a> VelocityItem<'a> {

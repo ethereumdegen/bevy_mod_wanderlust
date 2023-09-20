@@ -3,13 +3,14 @@ use bevy::{
     ecs::query::WorldQuery,
     prelude::*,
 };
-use super::xpbd;
+use crate::backend::xpbd;
+ 
 
 #[derive(WorldQuery)]
 pub struct Mass {
-    mass: &'static xpbd::prelude::Mass,
-    inertia: &'static xpbd::prelude::Inertia,
-    center_of_mass: &'static xpbd::prelude::CenterOfMass,
+    mass: &'static xpbd::Mass,
+    inertia: &'static xpbd::Inertia,
+    center_of_mass: &'static xpbd::CenterOfMass,
 }
 
 impl<'a> MassItem<'a> {

@@ -3,6 +3,9 @@ use bevy::utils::HashSet;
 
 use crate::backend::Collider;
 
+ 
+
+
 /// How to detect if something below the controller is suitable
 /// for standing on.
 #[derive(Component, Reflect)]
@@ -180,7 +183,7 @@ pub fn find_ground(
                     .unwrap_or(&GlobalTransform::IDENTITY);
                 let com = global.transform_point(local_com);
                 let velocity =
-                    ground_linear_vel + ground_angular_velocity.cross(result.point - com);
+                    ground_linear_vel + ground_angular_vel.cross(result.point - com);
 
                 *cast = GroundCast::Touching(Ground {
                     entity: ground_entity,

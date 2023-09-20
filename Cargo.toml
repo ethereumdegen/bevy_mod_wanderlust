@@ -13,7 +13,7 @@ repository = "https://github.com/PROMETHIA-27/bevy_mod_wanderlust"
 version = "0.4.0"
 
 [features]
-default = ["rapier3d"]
+default = ["xpbd3d"]
 debug_lines = []
 rapier = []
 rapier3d = ["rapier", "bevy_rapier3d"]
