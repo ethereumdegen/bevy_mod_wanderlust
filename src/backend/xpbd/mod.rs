@@ -70,7 +70,7 @@ use crate::backend::query::{RayCastResult, QueryFilter };
 
  
 
-
+/*
 pub fn cast_ray(
     spatial_query: &SpatialQuery,
     origin: Vec3,
@@ -99,36 +99,10 @@ pub fn cast_ray(
     })
 }
 
-
-
-/*
-
-fn ground_cast(
-    spatial_query: &SpatialQuery,
-    colliders: &Query<&Collider>,
-    globals: &Query<&GlobalTransform>,
-    mut shape_pos: Vec3,
-    shape_rot: Quat,
-    shape_vel: Vec3,
-    shape: &Collider,
-    max_toi: f32,
-    filter: QueryFilter,
-) -> Option<(Entity, RayCastResult)> {
-    for _ in 0..12 {
-        if let Some((entity, rayhit)) =
-            crate::backend::cast_shape(
-                spatial_query, 
-                shape_pos,
-                 shape_rot,
-                  shape_vel, 
-                  shape,
-                   max_toi,
-                   filter
-                   )
-        {
-
 */
 
+ 
+/*
 
 pub fn cast_shape (
     spatial_query: &SpatialQuery,
@@ -142,7 +116,7 @@ pub fn cast_shape (
     
     //fix me ! 
     None 
-}
+}*/
 /*
     /// Cast a shape downwards using the parameters.
     pub fn cast_shape(

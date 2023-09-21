@@ -136,6 +136,8 @@ spatial_query: &SpatialQuery,
     
 
 */
+
+/*
 fn ground_cast(
     spatial_query: &SpatialQuery,
     colliders: &Query<&Collider>,
@@ -212,7 +214,7 @@ fn ground_cast(
     .map(|(entity, inter)| (entity, inter.into()))*/
     None
 }
-
+*/
 /*
 fn intersections_with_ray_cast(
     ctx: &RapierContext,

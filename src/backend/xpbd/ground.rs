@@ -212,3 +212,259 @@ pub fn determine_groundedness(
         };
     }
 }
+
+
+
+
+
+
+
+/// Parameters to robust ground shape/raycasting.
+#[derive(Clone)]
+pub struct GroundCastParams<'c, 'f> {
+    /// Position of the shape in world-space.
+    pub position: Vec3,
+    /// Rotation of the shape.
+    pub rotation: Quat,
+    /// Direction to cast, this should be normalized.
+    pub direction: Vec3,
+    /// Shape to use in the shapecast.
+    pub shape: &'c Collider,
+    /// Maximum distance we should cast.
+    pub max_toi: f32,
+    /// Filter collider types/entities from this ground cast.
+    pub filter: QueryFilter<'f>,
+}
+
+/// Arbitrary "slop"/"fudge" amount to adjust various things.
+pub const FUDGE: f32 = 0.05;
+
+impl<'c, 'f> GroundCastParams<'c, 'f> {
+    /// Ground cast
+    pub fn cast_iters(
+        &mut self,
+        ctx: &RapierContext,
+        globals: &Query<&GlobalTransform>,
+        up_vector: Vec3,
+        iterations: usize,
+        gizmos: &mut Gizmos,
+    ) -> Option<(Entity, CastResult)> {
+        for _ in 0..iterations {
+            if let Some((entity, cast)) = self.cast(ctx, globals, up_vector, gizmos) {
+                return Some((entity, cast));
+            }
+        }
+
+        None
+    }
+
+    /// Robust viable ground casting, will try multiple times
+    /// if the cast fails to find viable ground.
+    pub fn viable_cast_iters(
+        &mut self,
+        ctx: &RapierContext,
+        globals: &Query<&GlobalTransform>,
+        max_angle: f32,
+        up_vector: Vec3,
+        iterations: usize,
+        gizmos: &mut Gizmos,
+    ) -> Option<(Entity, CastResult)> {
+        for _ in 0..iterations {
+            if let Some((entity, cast)) =
+                self.viable_cast(ctx, globals, up_vector, max_angle, gizmos)
+            {
+                return Some((entity, cast));
+            }
+        }
+
+        None
+    }
+
+    /// Find the first ground we can cast to.
+    pub fn cast(
+        &mut self,
+        ctx: &RapierContext,
+        globals: &Query<&GlobalTransform>,
+        up_vector: Vec3,
+        gizmos: &mut Gizmos,
+    ) -> Option<(Entity, CastResult)> {
+        self.correct_penetrations(ctx, globals);
+
+        let (entity, mut cast) = if let Some((entity, cast)) = self.cast_shape(ctx, gizmos) {
+            (entity, cast)
+        } else {
+            if let Some((entity, cast)) = self.cast_ray(ctx) {
+                (entity, cast)
+            } else {
+                return None;
+            }
+        };
+        let Some(sampled_normal) = self.sample_normals(ctx, cast, up_vector, gizmos) else { return None };
+        cast.normal = sampled_normal;
+
+        // Either none of the samples
+        if cast.normal.length_squared() > 0.0 {
+            Some((entity, cast))
+        } else {
+            None
+        }
+    }
+
+    /// Robust viable ground casting.
+    pub fn viable_cast(
+        &mut self,
+        ctx: &RapierContext,
+        globals: &Query<&GlobalTransform>,
+        up_vector: Vec3,
+        max_angle: f32,
+        gizmos: &mut Gizmos,
+    ) -> Option<(Entity, CastResult)> {
+        let Some((entity, cast)) = self.cast(ctx, globals, up_vector, gizmos) else { return None };
+
+        if cast.viable(up_vector, max_angle) {
+            Some((entity, cast))
+        } else {
+            self.slide(cast, up_vector, gizmos);
+            None
+        }
+    }
+
+    /// Push the ground cast parameteres out of any colliders it is penetrating.
+    pub fn correct_penetrations(&mut self, ctx: &RapierContext, globals: &Query<&GlobalTransform>) {
+        let manifolds =
+            contact_manifolds(ctx, self.position, self.rotation, self.shape, &self.filter);
+
+        for (entity, manifold) in &manifolds {
+            let local_normal: Vec3 = manifold.local_n2.into();
+
+            let Ok(contact_global) = globals.get(*entity) else { continue };
+            let normal = contact_global.to_scale_rotation_translation().1 * local_normal;
+            //for point in &manifold.points {
+            let correction = normal * 0.05;
+            self.position += correction;
+            //}
+        }
+    }
+
+    /// Cast a shape downwards using the parameters.
+    pub fn cast_shape(
+        &self,
+        ctx: &RapierContext,
+        gizmos: &mut Gizmos,
+    ) -> Option<(Entity, CastResult)> {
+        let Some((entity, toi)) = ctx
+            .cast_shape(self.position, self.rotation, self.direction, self.shape, self.max_toi, self.filter) else { return None };
+
+        if toi.status == TOIStatus::Penetrating || toi.toi <= std::f32::EPSILON {
+            return None;
+        }
+
+        let (entity, cast) = (entity, CastResult::from_toi1(toi));
+
+        gizmos.ray(self.position, self.direction * cast.toi, Color::BLUE);
+        gizmos.sphere(
+            self.position + self.direction * cast.toi,
+            self.rotation,
+            0.3,
+            Color::BLUE,
+        );
+
+        Some((entity, cast))
+    }
+
+    /// A fallback to a simple raycasting downwards.
+    ///
+    /// Used in the case that we are unable to correct penetration.
+    pub fn cast_ray(&self, ctx: &RapierContext) -> Option<(Entity, CastResult)> {
+        // This should only occur if the controller fails to correct penetration
+        // of colliders.
+
+        // local shape offset from origin to bottom of shape
+        let offset = self
+            .shape
+            .cast_local_ray(Vec3::ZERO, self.direction, 10.0, false)
+            .unwrap_or(0.);
+        let ray_pos = self.position + self.direction * offset;
+
+        ctx.cast_ray_and_get_normal(ray_pos, self.direction, self.max_toi, true, self.filter)
+            .map(|(entity, inter)| (entity, inter.into()))
+    }
+
+    /// Adjust to cast down the slope of the currently found ground.
+    ///
+    /// This is used so the controller doesn't repeatedly fall down
+    /// a slope despite there being some viable ground right beneath the
+    /// non-viable ground.
+    pub fn slide(&mut self, cast: CastResult, up_vector: Vec3, gizmos: &mut Gizmos) {
+        let projected_position = self.position + self.direction * cast.toi;
+        //let offset = cast.point.distance(projected_position);
+
+        let down_tangent = cast.down_tangent(up_vector);
+        self.direction = down_tangent.normalize_or_zero();
+        self.position = projected_position;
+
+        gizmos.ray(cast.point, down_tangent * 0.3, Color::CYAN);
+        self.max_toi -= cast.toi;
+        //max_toi -= (toi.toi - offset).max(0.0);
+        self.max_toi = self.max_toi.max(0.0);
+    }
+
+    /// Sample a couple of points around the contact point.
+    ///
+    /// This way we get more reliable normals by averaging rather than relying
+    /// on just the shapecast (which tends to interpolate normals while on edges).
+    pub fn sample_normals(
+        &self,
+        ctx: &RapierContext,
+        cast: CastResult,
+        up_vector: Vec3,
+        gizmos: &mut Gizmos,
+    ) -> Option<Vec3> {
+        // try to get a better normal rather than an edge interpolated normal.
+        // project back onto original shape position
+        let ray_dir = self.direction;
+        let ray_origin = cast.point + -ray_dir * cast.toi;
+
+        let (x, z) = ray_dir.any_orthonormal_pair();
+        let samples = [-x + z, -x - z, x + z, x - z, Vec3::ZERO];
+
+        // Initial correction, sample points around the contact point
+        // for the closest normal
+        let mut sampled = Vec::new();
+        let valid_radius = FUDGE * 2.0;
+        gizmos.sphere(cast.point, Quat::IDENTITY, valid_radius, Color::RED); // Bounding sphere of valid ray normals
+        for sample in samples {
+            let Some((_, inter)) = ctx.cast_ray_and_get_normal(
+                ray_origin - sample * FUDGE,
+                ray_dir,
+                self.max_toi,
+                true,
+                self.filter,
+            ) else { continue };
+
+            if inter.toi > 0.0
+                && inter.normal.length_squared() > 0.0
+                && inter.point.distance(cast.point) < valid_radius
+            {
+                gizmos.ray(inter.point, inter.normal * 0.2, Color::RED);
+                sampled.push(inter.normal);
+            }
+        }
+
+        let mut sum = Vec3::ZERO;
+        let mut weights = 0.0;
+        for sample in sampled {
+            let alignment = sample.dot(up_vector).abs();
+            sum += alignment * sample;
+            weights += alignment;
+        }
+        let weighted_average = sum / weights;
+        gizmos.ray(cast.point, weighted_average * 0.5, Color::MAROON);
+
+        if weighted_average.length_squared() > 0.0 {
+            Some(weighted_average)
+        } else {
+            None
+        }
+    }
+}
