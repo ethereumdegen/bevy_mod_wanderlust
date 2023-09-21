@@ -95,6 +95,71 @@ impl GroundCast {
     }
 }
 
+
+
+ 
+/// The cached viable ground cast. Contains the entity hit, the hit info, and velocity of the entity
+/// hit.
+#[derive(Component, Default, Deref, DerefMut)]
+pub struct ViableGroundCast(
+    /// Ground that was found this frame
+    pub GroundCache,
+);
+
+/// Current/last ground.
+#[derive(Default)]
+pub enum GroundCache {
+    /// This will stay the ground until we leave the ground entirely.
+    Ground(Ground),
+    /// Cached ground.
+    Last(Ground),
+    /// No stable ground.
+    #[default]
+    None,
+}
+
+ 
+impl GroundCache {
+    /// Update the ground depending on the current ground cast.
+    pub fn update(&mut self, ground: Option<Ground>) {
+        match ground {
+            Some(ground) => {
+                *self = Self::Ground(ground);
+            }
+            None => {
+                self.into_last();
+            }
+        }
+    }
+
+    /// Archive this ground cast.
+    pub fn into_last(&mut self) {
+        match self {
+            Self::Ground(ground) => {
+                *self = Self::Last(ground.clone());
+            }
+            _ => {}
+        }
+    }
+
+    /// Ground we are currently touching
+    pub fn current(&self) -> Option<&Ground> {
+        match self {
+            Self::Ground(ground) => Some(ground),
+            _ => None,
+        }
+    }
+
+    /// Last ground we touched, this includes the ground we are currently touching.
+    pub fn last(&self) -> Option<&Ground> {
+        match self {
+            Self::Ground(ground) | Self::Last(ground) => Some(ground),
+            Self::None => None,
+        }
+    }
+}
+    
+
 /// Is the character grounded?
 #[derive(Component, Default, Reflect, Deref)]
 #[reflect(Component, Default)]

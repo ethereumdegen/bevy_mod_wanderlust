@@ -243,7 +243,7 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// Ground cast
     pub fn cast_iters(
         &mut self,
-        ctx: &RapierContext,
+        ctx: &XpbdContext,
         globals: &Query<&GlobalTransform>,
         up_vector: Vec3,
         iterations: usize,
@@ -262,7 +262,7 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// if the cast fails to find viable ground.
     pub fn viable_cast_iters(
         &mut self,
-        ctx: &RapierContext,
+        ctx: &XpbdContext,
         globals: &Query<&GlobalTransform>,
         max_angle: f32,
         up_vector: Vec3,
@@ -283,7 +283,7 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// Find the first ground we can cast to.
     pub fn cast(
         &mut self,
-        ctx: &RapierContext,
+        ctx: &XpbdContext,
         globals: &Query<&GlobalTransform>,
         up_vector: Vec3,
         gizmos: &mut Gizmos,
@@ -313,7 +313,7 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// Robust viable ground casting.
     pub fn viable_cast(
         &mut self,
-        ctx: &RapierContext,
+        ctx: &XpbdContext,
         globals: &Query<&GlobalTransform>,
         up_vector: Vec3,
         max_angle: f32,
@@ -330,7 +330,7 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     }
 
     /// Push the ground cast parameteres out of any colliders it is penetrating.
-    pub fn correct_penetrations(&mut self, ctx: &RapierContext, globals: &Query<&GlobalTransform>) {
+    pub fn correct_penetrations(&mut self, ctx: &XpbdContext, globals: &Query<&GlobalTransform>) {
         let manifolds =
             contact_manifolds(ctx, self.position, self.rotation, self.shape, &self.filter);
 
@@ -349,15 +349,17 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// Cast a shape downwards using the parameters.
     pub fn cast_shape(
         &self,
-        ctx: &RapierContext,
+        ctx: &XpbdContext,
         gizmos: &mut Gizmos,
     ) -> Option<(Entity, CastResult)> {
         let Some((entity, toi)) = ctx
             .cast_shape(self.position, self.rotation, self.direction, self.shape, self.max_toi, self.filter) else { return None };
 
-        if toi.status == TOIStatus::Penetrating || toi.toi <= std::f32::EPSILON {
+       
+       //how can i add this back in ? 
+       /* if toi.status == TOIStatus::Penetrating || toi.toi <= std::f32::EPSILON {
             return None;
-        }
+        }*/
 
         let (entity, cast) = (entity, CastResult::from_toi1(toi));
 
@@ -375,7 +377,7 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// A fallback to a simple raycasting downwards.
     ///
     /// Used in the case that we are unable to correct penetration.
-    pub fn cast_ray(&self, ctx: &RapierContext) -> Option<(Entity, CastResult)> {
+    pub fn cast_ray(&self, ctx: &XpbdContext) -> Option<(Entity, CastResult)> {
         // This should only occur if the controller fails to correct penetration
         // of colliders.
 
@@ -415,7 +417,7 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// on just the shapecast (which tends to interpolate normals while on edges).
     pub fn sample_normals(
         &self,
-        ctx: &RapierContext,
+        ctx: &XpbdContext,
         cast: CastResult,
         up_vector: Vec3,
         gizmos: &mut Gizmos,
