@@ -25,15 +25,18 @@ pub struct GroundCaster {
     pub cast_length: f32,
     /// What shape of ray to cast. See [`Collider`] and [`RapierContext::cast_shape`](bevy_rapier::prelude::RapierContext).
     #[reflect(ignore)]
-    pub cast_collider: Collider,
+    pub cast_collider: Option<Collider>,
     /// Set of entities that should be ignored when ground casting.
     pub exclude_from_ground: HashSet<Entity>,
+
+    /// Threshold, in radians, of when a controller will start to slip on a surface.
+    ///
+    /// The controller will still be able to jump and overall be considered grounded.
+    pub unstable_ground_angle: f32,
     /// The maximum angle that the ground can be, in radians, before it is no longer considered suitable for being "grounded" on.
     ///
-    /// For example, if this is set to `π/4` (45 degrees), then a player standing on a slope steeper than 45 degrees will slip and fall, and will not have
+    /// For example, if this is set to `π/4` (45 degrees), then a controller standing on a slope steeper than 45 degrees will slip and fall, and will not have
     /// their jump refreshed by landing on that surface.
-    ///
-    /// This is done by ignoring the ground during ground casting.
     pub max_ground_angle: f32,
 }
 
@@ -44,9 +47,10 @@ impl Default for GroundCaster {
             skip_ground_check_override: false,
             cast_origin: Vec3::ZERO,
             cast_length: 1.0,
-            cast_collider: Collider::ball(0.45),
+            cast_collider: Some( Collider::ball(0.45)) ,
             exclude_from_ground: default(),
-            max_ground_angle: 75.0 * (std::f32::consts::PI / 180.0),
+            unstable_ground_angle: 45.0 * (std::f32::consts::PI / 180.0),
+            max_ground_angle: 60.0 * (std::f32::consts::PI / 180.0),
         }
     }
 }

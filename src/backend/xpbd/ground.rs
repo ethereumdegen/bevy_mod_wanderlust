@@ -151,7 +151,7 @@ pub fn find_ground(
 
             let next_viable_ground = viable_params
                 .viable_cast_iters(
-                  //  &*ctx,
+                  &spatial_query,
                     &globals,
                     caster.max_ground_angle,
                     gravity.up_vector,
@@ -159,12 +159,14 @@ pub fn find_ground(
                     &mut gizmos,
                 )
                 .map(|(entity, cast)| {
+                    
+                    
                     Ground::from_cast(
                         entity,
                         cast,
                         gravity.up_vector,
                         &*caster,
-                      //  &*ctx,
+                        &spatial_query,
                         &masses,
                         &velocities,
                         &globals,
@@ -173,16 +175,20 @@ pub fn find_ground(
             viable_ground.update(next_viable_ground);
 
             let next_ground = any_params
-                .cast_iters(
-                  //  &*ctx, 
-                    &globals, gravity.up_vector, 5, &mut gizmos)
+                .cast_iters(  //  &*ctx, 
+                     &spatial_query,
+                     &globals, 
+                    gravity.up_vector, 
+                    5,
+                     &mut gizmos
+                     )
                 .map(|(entity, cast)| {
                     Ground::from_cast(
                         entity,
                         cast,
                         gravity.up_vector,
                         &*caster,
-                        //&*ctx,
+                          &spatial_query,
                         &masses,
                         &velocities,
                         &globals,
@@ -324,6 +330,7 @@ impl<'c > GroundCastParams<'c > {
     pub fn cast_iters(
         &mut self,
      //   ctx: &XpbdContext,
+          spatial_query: SpatialQuery , 
         globals: &Query<&GlobalTransform>,
         up_vector: Vec3,
         iterations: usize,
@@ -332,11 +339,15 @@ impl<'c > GroundCastParams<'c > {
         for _ in 0..iterations {
             if let Some((entity, cast)) = self.cast(
                 //ctx,
-                 globals, up_vector, gizmos) {
+                 spatial_query,
+                 globals, 
+                 up_vector,
+                  gizmos) {
                 return Some((entity, cast));
             }
         }
 
+        
         None
     }
 
@@ -345,7 +356,7 @@ impl<'c > GroundCastParams<'c > {
     pub fn viable_cast_iters(
         &mut self,
       //  ctx: &XpbdContext,
-        
+          spatial_query: SpatialQuery , 
         globals: &Query<&GlobalTransform>,
         max_angle: f32,
         up_vector: Vec3,
@@ -356,6 +367,8 @@ impl<'c > GroundCastParams<'c > {
             if let Some((entity, cast)) =
                 self.viable_cast(
                   //  ctx,
+                     spatial_query,
+                     
                      globals, up_vector, max_angle, gizmos)
             {
                 return Some((entity, cast));
