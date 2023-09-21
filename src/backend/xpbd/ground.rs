@@ -4,11 +4,14 @@ use crate::controller::*;
 use bevy::utils::HashSet;
 
 use bevy::prelude::*;
-use bevy_xpbd_3d::prelude::{Collider, LinearVelocity};
+use bevy_xpbd_3d::math::Scalar;
+use bevy_xpbd_3d::parry::query::ContactManifold;
+use bevy_xpbd_3d::prelude::{Collider, LinearVelocity, Mass };
 use bevy_xpbd_3d::resources::DeltaTime;
 
  use crate::physics::ControllerVelocity;
  use crate::backend::xpbd::QueryFilter;
+ 
  
  
  
@@ -20,6 +23,63 @@ use bevy_xpbd_3d::resources::DeltaTime;
     },
     rapier::geometry::ContactManifold,
 };*/
+
+
+
+impl Ground {
+    /// Construct a `Ground` based on the results of `GroundCastParams`.
+    pub fn from_cast(
+        entity: Entity,
+        cast: CastResult,
+        up_vector: Vec3,
+        caster: &GroundCaster,
+       // ctx: &RapierContext,
+        //masses: &Query<&ReadMassProperties>,
+         masses: &Query<&Mass>,
+        velocities: &Query<&LinearVelocity>,
+        globals: &Query<&GlobalTransform>,
+    ) -> Self {
+        let ground_entity = ctx.collider_parent(entity).unwrap_or(entity);
+
+        let mass = if let Ok(mass) = masses.get(ground_entity) {
+            mass.0.clone()
+        } else {
+            Mass::default()
+        };
+
+        let local_com = mass.local_center_of_mass;
+
+        let ground_velocity = velocities
+            .get(ground_entity)
+            .copied()
+            .unwrap_or(LinearVelocity::default());
+
+        let global = globals
+            .get(ground_entity)
+            .unwrap_or(&GlobalTransform::IDENTITY);
+        let com = global.transform_point(local_com);
+        let point_velocity =
+            ground_velocity.linvel + ground_velocity.angvel.cross(cast.point - com);
+
+        let (stable, viable) = if cast.normal.length() > 0.0 {
+            let viable = cast.viable(up_vector, caster.max_ground_angle);
+            let stable = cast.viable(up_vector, caster.unstable_ground_angle) && viable;
+            (stable, viable)
+        } else {
+            (false, false)
+        };
+
+        Ground {
+            entity: ground_entity,
+            cast: cast,
+            stable: stable,
+            viable: viable,
+            linear_velocity: ground_velocity.linvel,
+            angular_velocity: ground_velocity.angvel,
+            point_velocity: point_velocity,
+        }
+    }
+}
 
 
 
@@ -37,7 +97,7 @@ pub fn find_ground(
     )>,
 
     velocities: Query<&LinearVelocity>,
-    masses: Query<&ReadMassProperties>,
+    masses: Query<&Mass>,
     globals: Query<&GlobalTransform>,
     colliders: Query<&Collider>,
     
@@ -495,3 +555,92 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
         }
     }
 }
+
+
+fn contact_manifolds(
+    
+    position: Vec3,
+    rotation: Quat,
+    collider: &Collider,
+    filter: &QueryFilter,
+    
+    //collisions: Res<Collisions>,
+    //mut bodies: Query<(&RigidBody, &mut Position)>,
+) {
+    // Iterate through collisions and move the kinematic body to resolve penetration
+    //for contacts in collisions.iter() {
+        // If the collision didn't happen during this substep, skip the collision
+        //if !contacts.during_current_substep {
+        //    continue;
+       // }
+        if let Ok([(rb1, mut position1), (rb2, mut position2)]) =
+            bodies.get_many_mut([contacts.entity1, contacts.entity2])
+        {
+            for manifold in contacts.manifolds.iter() {
+                for contact in manifold.contacts.iter() {
+                    if contact.penetration <= Scalar::EPSILON {
+                        continue;
+                    }
+                    if rb1.is_kinematic() && !rb2.is_kinematic() {
+                        position1.0 -= contact.normal * contact.penetration;
+                    } else if rb2.is_kinematic() && !rb1.is_kinematic() {
+                        position2.0 += contact.normal * contact.penetration;
+                    }
+                }
+            }
+        }
+  //  }
+}
+
+
+
+// Get a list of contacts for a given shape.
+/*pub fn contact_manifolds(
+   
+    position: Vec3,
+    rotation: Quat,
+    collider: &Collider,
+    filter: &QueryFilter,
+) -> Vec<(Entity, ContactManifold<>)> {
+    let physics_scale = ctx.physics_scale();
+
+    let shape = &collider.raw;
+    let shape_iso = Isometry3 {
+        translation: (position * physics_scale).into(),
+        rotation: rotation.into(),
+    };
+
+    let shape_aabb = shape.compute_aabb(&shape_iso).loosened(FUDGE);
+
+    let mut manifolds = Vec::new();
+    ctx.query_pipeline
+        .colliders_with_aabb_intersecting_aabb(&shape_aabb, |handle| {
+            if let Some(collider) = ctx.colliders.get(*handle) {
+                if RapierContext::with_query_filter(&ctx, *filter, |rapier_filter| {
+                    rapier_filter.test(&ctx.bodies, *handle, collider)
+                }) {
+                    let mut new_manifolds = Vec::new();
+                    let pos12 = shape_iso.inv_mul(collider.position());
+                    let _ = DefaultQueryDispatcher.contact_manifolds(
+                        &pos12,
+                        shape.as_ref(),
+                        collider.shape(),
+                        0.01,
+                        &mut new_manifolds,
+                        &mut None,
+                    );
+
+                    if let Some(entity) = ctx.collider_entity(*handle) {
+                        manifolds
+                            .extend(new_manifolds.into_iter().map(|manifold| (entity, manifold)));
+                    }
+                }
+            }
+
+            true
+        });
+
+    manifolds
+}
+
+*/

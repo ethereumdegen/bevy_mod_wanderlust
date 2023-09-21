@@ -19,6 +19,62 @@ use bevy_rapier3d::{
  
  
 
+impl Ground {
+    /// Construct a `Ground` based on the results of `GroundCastParams`.
+    pub fn from_cast(
+        entity: Entity,
+        cast: CastResult,
+        up_vector: Vec3,
+        caster: &GroundCaster,
+        ctx: &RapierContext,
+        masses: &Query<&ReadMassProperties>,
+        velocities: &Query<&Velocity>,
+        globals: &Query<&GlobalTransform>,
+    ) -> Self {
+        let ground_entity = ctx.collider_parent(entity).unwrap_or(entity);
+
+        let mass = if let Ok(mass) = masses.get(ground_entity) {
+            mass.0.clone()
+        } else {
+            MassProperties::default()
+        };
+
+        let local_com = mass.local_center_of_mass;
+
+        let ground_velocity = velocities
+            .get(ground_entity)
+            .copied()
+            .unwrap_or(Velocity::default());
+
+        let global = globals
+            .get(ground_entity)
+            .unwrap_or(&GlobalTransform::IDENTITY);
+        let com = global.transform_point(local_com);
+        let point_velocity =
+            ground_velocity.linvel + ground_velocity.angvel.cross(cast.point - com);
+
+        let (stable, viable) = if cast.normal.length() > 0.0 {
+            let viable = cast.viable(up_vector, caster.max_ground_angle);
+            let stable = cast.viable(up_vector, caster.unstable_ground_angle) && viable;
+            (stable, viable)
+        } else {
+            (false, false)
+        };
+
+        Ground {
+            entity: ground_entity,
+            cast: cast,
+            stable: stable,
+            viable: viable,
+            linear_velocity: ground_velocity.linvel,
+            angular_velocity: ground_velocity.angvel,
+            point_velocity: point_velocity,
+        }
+    }
+}
+
+  
+
 /// Performs groundcasting and updates controller state accordingly.
 pub fn find_ground(
     time: Res<Time>,

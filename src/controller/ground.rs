@@ -51,17 +51,26 @@ impl Default for GroundCaster {
     }
 }
 
-#[derive(Clone)]
+
+#[derive(Copy, Clone)]
 pub struct Ground {
     /// Entity found in ground cast.
     pub entity: Entity,
     /// Specifics of the ground contact.
-    pub cast: RayCastResult,  //is this right ? 
-    /// Linear velocity at the point of contact.
+    pub cast: CastResult,
+    /// Is this ground stable for the collider.
+    pub stable: bool,
+    /// Is this ground viable for the collider.
+    pub viable: bool,
+    /// Angular velocity of the ground body.
+    pub angular_velocity: Vec3,
+    /// Linear velocity of the ground body.
     pub linear_velocity: Vec3,
-    /// Angular velocity at the point of contact.
-    pub angular_velocity: Vec3, 
+    /// Linear velocity at the point of contact.
+    pub point_velocity: Vec3,
 }
+
+
 
 /// The cached ground cast. Contains the entity hit, the hit info, and velocity of the entity
 /// hit.
@@ -245,15 +254,19 @@ impl CastResult {
     }
 }*/
 
+/*
 impl From<RayIntersection> for CastResult {
     fn from(intersection: RayIntersection) -> Self {
         Self {
             toi: intersection.toi,
-            normal: intersection.normal,
-            point: intersection.point,
+            normal: intersection.normal.into(),
+            
+            point: intersection.point ,
+            
+           
         }
     }
-}
+}*/
 
 
 
