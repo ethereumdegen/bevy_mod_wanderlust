@@ -237,7 +237,7 @@ pub struct GroundCastParams<'c, 'f> {
     /// Maximum distance we should cast.
     pub max_toi: f32,
     /// Filter collider types/entities from this ground cast.
-    pub filter: QueryFilter<'f>,
+    pub filter: QueryFilter ,
 }
 
 /// Arbitrary "slop"/"fudge" amount to adjust various things.
@@ -268,7 +268,7 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// if the cast fails to find viable ground.
     pub fn viable_cast_iters(
         &mut self,
-        ctx: &XpbdContext,
+      //  ctx: &XpbdContext,
         globals: &Query<&GlobalTransform>,
         max_angle: f32,
         up_vector: Vec3,
