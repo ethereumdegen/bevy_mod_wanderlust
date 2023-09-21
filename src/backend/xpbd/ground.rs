@@ -4,7 +4,8 @@ use crate::controller::*;
 use bevy::utils::HashSet;
 
 use bevy::prelude::*;
-use bevy_xpbd_3d::prelude::Collider;
+use bevy_xpbd_3d::prelude::{Collider, LinearVelocity};
+use bevy_xpbd_3d::resources::DeltaTime;
 
  use crate::physics::ControllerVelocity;
  use crate::backend::xpbd::QueryFilter;
@@ -35,15 +36,16 @@ pub fn find_ground(
         &mut ViableGroundCast,
     )>,
 
-    velocities: Query<&Velocity>,
+    velocities: Query<&LinearVelocity>,
     masses: Query<&ReadMassProperties>,
     globals: Query<&GlobalTransform>,
     colliders: Query<&Collider>,
-
-    ctx: Res<XpbdContext>,   //this get us dt 
+    
+    delta_time: Res<DeltaTime>, 
+    //ctx: Res<XpbdContext>,   //this get us dt 
     mut gizmos: Gizmos,
 ) {
-    let dt = ctx.integration_parameters.dt;
+    let dt = delta_time.0 ;
     if time.delta_seconds() == 0.0 {
         return;
     }
@@ -73,7 +75,7 @@ pub fn find_ground(
 
             let next_viable_ground = viable_params
                 .viable_cast_iters(
-                    &*ctx,
+                  //  &*ctx,
                     &globals,
                     caster.max_ground_angle,
                     gravity.up_vector,
@@ -86,7 +88,7 @@ pub fn find_ground(
                         cast,
                         gravity.up_vector,
                         &*caster,
-                        &*ctx,
+                      //  &*ctx,
                         &masses,
                         &velocities,
                         &globals,
@@ -95,14 +97,16 @@ pub fn find_ground(
             viable_ground.update(next_viable_ground);
 
             let next_ground = any_params
-                .cast_iters(&*ctx, &globals, gravity.up_vector, 5, &mut gizmos)
+                .cast_iters(
+                  //  &*ctx, 
+                    &globals, gravity.up_vector, 5, &mut gizmos)
                 .map(|(entity, cast)| {
                     Ground::from_cast(
                         entity,
                         cast,
                         gravity.up_vector,
                         &*caster,
-                        &*ctx,
+                        //&*ctx,
                         &masses,
                         &velocities,
                         &globals,
@@ -243,14 +247,16 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// Ground cast
     pub fn cast_iters(
         &mut self,
-        ctx: &XpbdContext,
+     //   ctx: &XpbdContext,
         globals: &Query<&GlobalTransform>,
         up_vector: Vec3,
         iterations: usize,
         gizmos: &mut Gizmos,
     ) -> Option<(Entity, CastResult)> {
         for _ in 0..iterations {
-            if let Some((entity, cast)) = self.cast(ctx, globals, up_vector, gizmos) {
+            if let Some((entity, cast)) = self.cast(
+                //ctx,
+                 globals, up_vector, gizmos) {
                 return Some((entity, cast));
             }
         }
@@ -271,7 +277,9 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     ) -> Option<(Entity, CastResult)> {
         for _ in 0..iterations {
             if let Some((entity, cast)) =
-                self.viable_cast(ctx, globals, up_vector, max_angle, gizmos)
+                self.viable_cast(
+                  //  ctx,
+                     globals, up_vector, max_angle, gizmos)
             {
                 return Some((entity, cast));
             }
@@ -283,12 +291,15 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// Find the first ground we can cast to.
     pub fn cast(
         &mut self,
-        ctx: &XpbdContext,
+       // ctx: &XpbdContext,
         globals: &Query<&GlobalTransform>,
         up_vector: Vec3,
         gizmos: &mut Gizmos,
     ) -> Option<(Entity, CastResult)> {
-        self.correct_penetrations(ctx, globals);
+        self.correct_penetrations(
+            //ctx, 
+            globals
+            );
 
         let (entity, mut cast) = if let Some((entity, cast)) = self.cast_shape(ctx, gizmos) {
             (entity, cast)
@@ -299,7 +310,12 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
                 return None;
             }
         };
-        let Some(sampled_normal) = self.sample_normals(ctx, cast, up_vector, gizmos) else { return None };
+        let Some(sampled_normal) = self.sample_normals(
+            //ctx,
+             cast, 
+             up_vector, 
+             gizmos
+             ) else { return None };
         cast.normal = sampled_normal;
 
         // Either none of the samples
@@ -313,13 +329,15 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// Robust viable ground casting.
     pub fn viable_cast(
         &mut self,
-        ctx: &XpbdContext,
+       // ctx: &XpbdContext,
         globals: &Query<&GlobalTransform>,
         up_vector: Vec3,
         max_angle: f32,
         gizmos: &mut Gizmos,
     ) -> Option<(Entity, CastResult)> {
-        let Some((entity, cast)) = self.cast(ctx, globals, up_vector, gizmos) else { return None };
+        let Some((entity, cast)) = self.cast(
+            //ctx,
+             globals, up_vector, gizmos) else { return None };
 
         if cast.viable(up_vector, max_angle) {
             Some((entity, cast))
@@ -330,9 +348,14 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     }
 
     /// Push the ground cast parameteres out of any colliders it is penetrating.
-    pub fn correct_penetrations(&mut self, ctx: &XpbdContext, globals: &Query<&GlobalTransform>) {
+    pub fn correct_penetrations(
+        &mut self,
+      //   ctx: &XpbdContext, 
+         globals: &Query<&GlobalTransform>) {
         let manifolds =
-            contact_manifolds(ctx, self.position, self.rotation, self.shape, &self.filter);
+            contact_manifolds(
+             //   ctx, 
+                self.position, self.rotation, self.shape, &self.filter);
 
         for (entity, manifold) in &manifolds {
             let local_normal: Vec3 = manifold.local_n2.into();
@@ -349,7 +372,7 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// Cast a shape downwards using the parameters.
     pub fn cast_shape(
         &self,
-        ctx: &XpbdContext,
+      //  ctx: &XpbdContext,
         gizmos: &mut Gizmos,
     ) -> Option<(Entity, CastResult)> {
         let Some((entity, toi)) = ctx
@@ -377,7 +400,9 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// A fallback to a simple raycasting downwards.
     ///
     /// Used in the case that we are unable to correct penetration.
-    pub fn cast_ray(&self, ctx: &XpbdContext) -> Option<(Entity, CastResult)> {
+    pub fn cast_ray(&self, 
+        //ctx: &XpbdContext
+        ) -> Option<(Entity, CastResult)> {
         // This should only occur if the controller fails to correct penetration
         // of colliders.
 
@@ -417,7 +442,7 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// on just the shapecast (which tends to interpolate normals while on edges).
     pub fn sample_normals(
         &self,
-        ctx: &XpbdContext,
+        //ctx: &XpbdContext,
         cast: CastResult,
         up_vector: Vec3,
         gizmos: &mut Gizmos,
