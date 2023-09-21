@@ -18,6 +18,9 @@ pub use query::*;
 mod context;
 pub use context::*;
 
+mod ground;
+pub use ground::*;
+
 
 pub use rapier::prelude::Collider;
 

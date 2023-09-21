@@ -40,7 +40,7 @@ pub fn find_ground(
     globals: Query<&GlobalTransform>,
     colliders: Query<&Collider>,
 
-    ctx: Res<RapierContext>,
+    ctx: Res<XpbdContext>,   //this get us dt 
     mut gizmos: Gizmos,
 ) {
     let dt = ctx.integration_parameters.dt;

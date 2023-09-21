@@ -124,6 +124,18 @@ pub fn determine_groundedness(mut query: Query<(&Float, &GroundCast, &mut Ground
     }
 }
 
+
+/*
+
+spatial_query: &SpatialQuery,
+    origin: Vec3,
+    direction: Vec3,
+    max_toi: f32,
+     solid: bool,
+    filter: QueryFilter,
+    
+
+*/
 fn ground_cast(
     spatial_query: &SpatialQuery,
     colliders: &Query<&Collider>,
@@ -137,7 +149,15 @@ fn ground_cast(
 ) -> Option<(Entity, RayCastResult)> {
     for _ in 0..12 {
         if let Some((entity, rayhit)) =
-            crate::backend::cast_shape(spatial_query, shape_pos, shape_rot, shape_vel, shape, max_toi, filter)
+            crate::backend::cast_shape(
+                spatial_query, 
+                shape_pos,
+                 shape_rot,
+                  shape_vel, 
+                  shape,
+                   max_toi,
+                   filter
+                   )
         {
             /*
             if toi.status != TOIStatus::Penetrating {

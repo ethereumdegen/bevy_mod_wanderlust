@@ -38,7 +38,7 @@ pub use crate::backend::xpbd::{
     apply_forces,
     apply_ground_forces,
     cast_ray,
-    //cast_shape,
+    cast_shape,
     setup_physics_context,
     SpatialQuery,
     XpbdPhysicsBundle as BackendPhysicsBundle,

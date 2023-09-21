@@ -98,3 +98,94 @@ pub fn cast_ray(
         }
     })
 }
+
+
+
+/*
+
+fn ground_cast(
+    spatial_query: &SpatialQuery,
+    colliders: &Query<&Collider>,
+    globals: &Query<&GlobalTransform>,
+    mut shape_pos: Vec3,
+    shape_rot: Quat,
+    shape_vel: Vec3,
+    shape: &Collider,
+    max_toi: f32,
+    filter: QueryFilter,
+) -> Option<(Entity, RayCastResult)> {
+    for _ in 0..12 {
+        if let Some((entity, rayhit)) =
+            crate::backend::cast_shape(
+                spatial_query, 
+                shape_pos,
+                 shape_rot,
+                  shape_vel, 
+                  shape,
+                   max_toi,
+                   filter
+                   )
+        {
+
+*/
+
+
+pub fn cast_shape (
+    spatial_query: &SpatialQuery,
+    mut shape_pos: Vec3,
+    shape_rot: Quat,
+    shape_vel: Vec3,
+    shape: &Collider,
+    max_toi: f32,
+    filter: QueryFilter,
+) -> Option<RayCastResult> { 
+    
+    //fix me ! 
+    None 
+}
+/*
+    /// Cast a shape downwards using the parameters.
+    pub fn cast_shape(
+        &self,
+        ctx: &RapierContext,
+        gizmos: &mut Gizmos,
+    ) -> Option<(Entity, CastResult)> {
+        let Some((entity, toi)) = ctx
+            .cast_shape(self.position, self.rotation, self.direction, self.shape, self.max_toi, self.filter) else { return None };
+
+        if toi.status == TOIStatus::Penetrating || toi.toi <= std::f32::EPSILON {
+            return None;
+        }
+
+        let (entity, cast) = (entity, CastResult::from_toi1(toi));
+
+        gizmos.ray(self.position, self.direction * cast.toi, Color::BLUE);
+        gizmos.sphere(
+            self.position + self.direction * cast.toi,
+            self.rotation,
+            0.3,
+            Color::BLUE,
+        );
+
+        Some((entity, cast))
+    }
+
+    /// A fallback to a simple raycasting downwards.
+    ///
+    /// Used in the case that we are unable to correct penetration.
+    pub fn cast_ray(&self, ctx: &RapierContext) -> Option<(Entity, CastResult)> {
+        // This should only occur if the controller fails to correct penetration
+        // of colliders.
+
+        // local shape offset from origin to bottom of shape
+        let offset = self
+            .shape
+            .cast_local_ray(Vec3::ZERO, self.direction, 10.0, false)
+            .unwrap_or(0.);
+        let ray_pos = self.position + self.direction * offset;
+
+        ctx.cast_ray_and_get_normal(ray_pos, self.direction, self.max_toi, true, self.filter)
+            .map(|(entity, inter)| (entity, inter.into()))
+    }
+    
+    */
