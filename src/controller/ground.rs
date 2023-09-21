@@ -78,7 +78,7 @@ pub struct Ground {
 
 /// The cached ground cast. Contains the entity hit, the hit info, and velocity of the entity
 /// hit.
-#[derive(Component, Default)]
+/*#[derive(Component, Default)]
 pub enum GroundCast {
     Touching(Ground),
     Last(Ground),
@@ -110,7 +110,18 @@ impl GroundCast {
         }
     }
 }
+*/
 
+
+/// The cached ground cast. Contains the entity hit, the hit info, and velocity of the entity
+/// hit.
+#[derive(Component, Default, Deref, DerefMut)]
+pub struct GroundCast(
+    /// Ground that was found this frame,
+    /// this might not be viable for standing on.
+    pub GroundCache,
+);
+ 
 
 
  

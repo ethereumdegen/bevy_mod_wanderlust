@@ -25,3 +25,18 @@ pub struct QueryFilter {
     pub exclude: HashSet<Entity>,
 }
  
+ 
+impl QueryFilter {
+    
+    pub fn new() -> Self { 
+        Self {
+            exclude: HashSet::new()            
+        } 
+    }
+    
+    pub fn exclude_sensors(self) -> Self{
+        self //fix me ? 
+    }
+    
+}
+ 

@@ -121,8 +121,8 @@ pub fn find_ground(
         &mut ViableGroundCast,
     )>,
 
-    velocities: Query<&LinearVelocity>,
-    masses: Query<&Mass>,
+    velocities: Query<(&LinearVelocity, &AngularVelocity)>,
+    masses: Query<(&Mass,&CenterOfMass)>,
     globals: Query<&GlobalTransform>,
     colliders: Query<&Collider>,
     
@@ -145,7 +145,9 @@ pub fn find_ground(
 
             let predicate =
                 |collider| collider != entity && !caster.exclude_from_ground.contains(&collider);
-            let filter = QueryFilter::new().exclude_sensors().predicate(&predicate);
+                
+                //fix me !!! what is exclude sensors and predicate ? 
+            let filter = QueryFilter::new(); //.exclude_sensors().predicate(&predicate);
 
             let mut viable_params = GroundCastParams {
                 position: cast_position,
@@ -202,7 +204,11 @@ pub fn find_ground(
                         &velocities,
                         &globals,
                     )
+                    
+                    
                 });
+                
+                //this is GroundCast 
             ground.update(next_ground);
         } else {
             caster.skip_ground_check_timer = (caster.skip_ground_check_timer - dt).max(0.0);
