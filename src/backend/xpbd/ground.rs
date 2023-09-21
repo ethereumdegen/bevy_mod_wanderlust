@@ -13,7 +13,16 @@ use bevy_xpbd_3d::resources::DeltaTime;
  use crate::backend::xpbd::QueryFilter;
  
  
+ /*
  
+ TODO 
+ 
+ see how this works inside of xpbd 
+ 
+ spatial_query.cast_ray
+ 
+ 
+ */
  
 /*use bevy_rapier3d::{
     na::Isometry3,
@@ -143,7 +152,7 @@ pub fn find_ground(
                 rotation: cast_rotation,
                 direction: cast_direction,
                 shape: &shape,
-                max_toi: caster.cast_length,
+                max_toi: caster.cast_length, 
                 filter: filter,
             };
 
