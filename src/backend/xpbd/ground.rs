@@ -6,7 +6,7 @@ use bevy::utils::HashSet;
 use bevy::prelude::*;
 use bevy_xpbd_3d::math::Scalar;
 use bevy_xpbd_3d::parry::query::ContactManifold;
-use bevy_xpbd_3d::prelude::{Collider, LinearVelocity, Mass, SpatialQuery };
+use bevy_xpbd_3d::prelude::{Collider, LinearVelocity, Mass, SpatialQuery, AngularVelocity, CenterOfMass };
 use bevy_xpbd_3d::resources::DeltaTime;
 
  use crate::physics::ControllerVelocity;
@@ -38,31 +38,44 @@ impl Ground {
         
        // ctx: &RapierContext,
         //masses: &Query<&ReadMassProperties>,
-         masses: &Query<&Mass>,
-        velocities: &Query<&LinearVelocity>,
+         masses: &Query<(&Mass, &CenterOfMass)>,
+        velocities: &Query<(&LinearVelocity, &AngularVelocity)>, 
+         
         globals: &Query<&GlobalTransform>,
     ) -> Self {
-        let ground_entity = ctx.collider_parent(entity).unwrap_or(entity);
-
-        let mass = if let Ok(mass) = masses.get(ground_entity) {
-            mass.0.clone()
+        
+        //what did this do ?
+        //let ground_entity = ctx.collider_parent(entity).unwrap_or(entity);
+       
+       //is this right? 
+       let ground_entity  = entity.clone();
+        
+        
+        let (mass,center_of_mass) = if let Ok((mass,center_of_mass)) = masses.get(ground_entity) {
+            (mass.0.clone(), center_of_mass.0.clone())
         } else {
-            *Mass::default()
+            (*Mass::default(),*CenterOfMass::default())
         };
 
-        let local_com = mass.local_center_of_mass;
+        let local_com = center_of_mass;
 
-        let ground_velocity = velocities
-            .get(ground_entity)
-            .copied()
-            .unwrap_or(LinearVelocity::default());
+        let ( ground_linear_velocity, ground_angular_velocity ) = match velocities
+            .get(ground_entity) {
+                Ok( (lin_vel , ang_vel) ) => {
+                     (lin_vel.0.clone() , ang_vel.0.clone() )
+                },
+                Err(e) => {
+                    ( LinearVelocity::default().0, AngularVelocity::default().0 )
+                }
+            };
+       
 
         let global = globals
             .get(ground_entity)
             .unwrap_or(&GlobalTransform::IDENTITY);
         let com = global.transform_point(local_com);
         let point_velocity =
-            ground_velocity.linvel + ground_velocity.angvel.cross(cast.point - com);
+            ground_linear_velocity + ground_angular_velocity .cross(cast.point - com);
 
         let (stable, viable) = if cast.normal.length() > 0.0 {
             let viable = cast.viable(up_vector, caster.max_ground_angle);
@@ -71,14 +84,14 @@ impl Ground {
         } else {
             (false, false)
         };
-
+ 
         Ground {
             entity: ground_entity,
             cast: cast,
             stable: stable,
             viable: viable,
-            linear_velocity: ground_velocity.linvel,
-            angular_velocity: ground_velocity.angvel,
+            linear_velocity : ground_linear_velocity ,
+            angular_velocity : ground_angular_velocity ,
             point_velocity: point_velocity,
         }
     }
