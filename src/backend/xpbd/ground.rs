@@ -6,7 +6,7 @@ use bevy::utils::HashSet;
 use bevy::prelude::*;
 use bevy_xpbd_3d::math::Scalar;
 use bevy_xpbd_3d::parry::query::ContactManifold;
-use bevy_xpbd_3d::prelude::{Collider, LinearVelocity, Mass };
+use bevy_xpbd_3d::prelude::{Collider, LinearVelocity, Mass, SpatialQuery };
 use bevy_xpbd_3d::resources::DeltaTime;
 
  use crate::physics::ControllerVelocity;
@@ -33,6 +33,9 @@ impl Ground {
         cast: CastResult,
         up_vector: Vec3,
         caster: &GroundCaster,
+
+        spatial_query: SpatialQuery , 
+        
        // ctx: &RapierContext,
         //masses: &Query<&ReadMassProperties>,
          masses: &Query<&Mass>,
@@ -44,7 +47,7 @@ impl Ground {
         let mass = if let Ok(mass) = masses.get(ground_entity) {
             mass.0.clone()
         } else {
-            Mass::default()
+            *Mass::default()
         };
 
         let local_com = mass.local_center_of_mass;
@@ -285,7 +288,7 @@ pub fn determine_groundedness(
 
 /// Parameters to robust ground shape/raycasting.
 #[derive(Clone)]
-pub struct GroundCastParams<'c, 'f> {
+pub struct GroundCastParams<'c > {
     /// Position of the shape in world-space.
     pub position: Vec3,
     /// Rotation of the shape.
@@ -303,7 +306,7 @@ pub struct GroundCastParams<'c, 'f> {
 /// Arbitrary "slop"/"fudge" amount to adjust various things.
 pub const FUDGE: f32 = 0.05;
 
-impl<'c, 'f> GroundCastParams<'c, 'f> {
+impl<'c > GroundCastParams<'c > {
     /// Ground cast
     pub fn cast_iters(
         &mut self,
@@ -329,6 +332,7 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     pub fn viable_cast_iters(
         &mut self,
       //  ctx: &XpbdContext,
+        
         globals: &Query<&GlobalTransform>,
         max_angle: f32,
         up_vector: Vec3,
@@ -351,7 +355,7 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// Find the first ground we can cast to.
     pub fn cast(
         &mut self,
-       // ctx: &XpbdContext,
+        spatial_query: SpatialQuery , 
         globals: &Query<&GlobalTransform>,
         up_vector: Vec3,
         gizmos: &mut Gizmos,
@@ -361,17 +365,17 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
             globals
             );
 
-        let (entity, mut cast) = if let Some((entity, cast)) = self.cast_shape(ctx, gizmos) {
+        let (entity, mut cast) = if let Some((entity, cast)) = self.cast_shape(spatial_query, gizmos) {
             (entity, cast)
         } else {
-            if let Some((entity, cast)) = self.cast_ray(ctx) {
+            if let Some((entity, cast)) = self.cast_ray( spatial_query ) {
                 (entity, cast)
             } else {
                 return None;
             }
         };
         let Some(sampled_normal) = self.sample_normals(
-            //ctx,
+            spatial_query,
              cast, 
              up_vector, 
              gizmos
@@ -389,15 +393,17 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// Robust viable ground casting.
     pub fn viable_cast(
         &mut self,
-       // ctx: &XpbdContext,
+          spatial_query: SpatialQuery , 
         globals: &Query<&GlobalTransform>,
         up_vector: Vec3,
         max_angle: f32,
         gizmos: &mut Gizmos,
     ) -> Option<(Entity, CastResult)> {
         let Some((entity, cast)) = self.cast(
-            //ctx,
-             globals, up_vector, gizmos) else { return None };
+           spatial_query,
+             globals,
+              up_vector,
+               gizmos) else { return None };
 
         if cast.viable(up_vector, max_angle) {
             Some((entity, cast))
@@ -432,11 +438,23 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// Cast a shape downwards using the parameters.
     pub fn cast_shape(
         &self,
+        
+        
+          spatial_query: SpatialQuery , 
+          
+          
       //  ctx: &XpbdContext,
         gizmos: &mut Gizmos,
     ) -> Option<(Entity, CastResult)> {
-        let Some((entity, toi)) = ctx
-            .cast_shape(self.position, self.rotation, self.direction, self.shape, self.max_toi, self.filter) else { return None };
+        let Some((entity, toi)) = spatial_query
+            .cast_shape(
+                self.position, 
+                self.rotation,
+                 self.direction, 
+                 self.shape, 
+                 self.max_toi,
+                  self.filter
+                  ) else { return None };
 
        
        //how can i add this back in ? 
@@ -461,7 +479,9 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     ///
     /// Used in the case that we are unable to correct penetration.
     pub fn cast_ray(&self, 
-        //ctx: &XpbdContext
+ 
+          spatial_query: SpatialQuery , 
+          
         ) -> Option<(Entity, CastResult)> {
         // This should only occur if the controller fails to correct penetration
         // of colliders.
@@ -473,7 +493,8 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
             .unwrap_or(0.);
         let ray_pos = self.position + self.direction * offset;
 
-        ctx.cast_ray_and_get_normal(ray_pos, self.direction, self.max_toi, true, self.filter)
+            //was cast_ray_and_get_normal
+        spatial_query.cast_ray (ray_pos, self.direction, self.max_toi, true, self.filter)
             .map(|(entity, inter)| (entity, inter.into()))
     }
 
@@ -482,7 +503,12 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     /// This is used so the controller doesn't repeatedly fall down
     /// a slope despite there being some viable ground right beneath the
     /// non-viable ground.
-    pub fn slide(&mut self, cast: CastResult, up_vector: Vec3, gizmos: &mut Gizmos) {
+    pub fn slide(
+        &mut self, 
+        cast: CastResult,
+         up_vector: Vec3,
+         gizmos: &mut Gizmos
+         ) {
         let projected_position = self.position + self.direction * cast.toi;
         //let offset = cast.point.distance(projected_position);
 
@@ -503,6 +529,8 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
     pub fn sample_normals(
         &self,
         //ctx: &XpbdContext,
+           spatial_query: SpatialQuery , 
+           
         cast: CastResult,
         up_vector: Vec3,
         gizmos: &mut Gizmos,
@@ -521,7 +549,9 @@ impl<'c, 'f> GroundCastParams<'c, 'f> {
         let valid_radius = FUDGE * 2.0;
         gizmos.sphere(cast.point, Quat::IDENTITY, valid_radius, Color::RED); // Bounding sphere of valid ray normals
         for sample in samples {
-            let Some((_, inter)) = ctx.cast_ray_and_get_normal(
+            //was cast_ray_and_get_normal 
+            
+            let Some((_, inter)) = spatial_query.cast_ray(
                 ray_origin - sample * FUDGE,
                 ray_dir,
                 self.max_toi,

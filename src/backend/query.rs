@@ -20,6 +20,8 @@ pub struct ShapeCastResult {
     pub point2: Vec3,
 }
 
+#[derive(Debug,   Clone, Reflect)]
 pub struct QueryFilter {
     pub exclude: HashSet<Entity>,
 }
+ 
