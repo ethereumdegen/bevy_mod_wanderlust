@@ -49,9 +49,16 @@ pub fn float_force(
         &GlobalTransform,
         &mut FloatForce,
         &Float,
+ 
         &ViableGroundCast,
         &ControllerVelocity,
         &ControllerMass,
+ 
+    /*    &GroundCast,
+        &GroundCaster,
+        Velocity,
+        Mass, */
+ 
         &Gravity,
     )>,
 ) {
@@ -63,9 +70,13 @@ pub fn float_force(
         let up_vector = gravity.up_vector;
 
         let controller_point_velocity =
-            velocity.linear + velocity.angular.cross(Vec3::ZERO - mass.com);
+            velocity.linear() + velocity.angular().cross(Vec3::ZERO - mass.local_center_of_mass());
         let vel_align = up_vector.dot(controller_point_velocity);
+ 
         let ground_vel_align = up_vector.dot(ground.point_velocity);
+ 
+        //let ground_vel_align = up_vector.dot(ground.linear_velocity);
+ 
 
         let relative_velocity = vel_align - ground_vel_align;
 
@@ -75,8 +86,13 @@ pub fn float_force(
         //info!("displacement: {:.2?}", displacement);
 
         if displacement > 0.0 {
+ 
             let strength = displacement * float.spring.strength.get(Vec3::splat(mass.mass));
             let damping = relative_velocity * float.spring.damp_coefficient(Vec3::splat(mass.mass));
+ 
+            //let strength = displacement * float.spring.strength;
+            //let damping = relative_velocity * float.spring.damp_coefficient(mass.mass());
+ 
             force.linear += up_vector * (strength - damping);
         }
     }
@@ -120,9 +136,15 @@ pub fn upright_force(
         &Upright,
         &GlobalTransform,
         &Gravity,
+ 
         &ControllerMass,
         &ControllerVelocity,
         /*&ViableGroundCast,*/
+ 
+       /* Mass,
+        Velocity,
+        &GroundCast, */
+ 
     )>,
 ) {
     for (mut impulse, upright, tf, gravity, mass, velocity, /*viable_ground*/) in &mut query {
@@ -143,15 +165,30 @@ pub fn upright_force(
                 current.cross(gravity.up_vector)
             };
 
+ 
             let damping = upright.spring.damp_coefficient(mass.inertia);
 
             /*
             let ground_rot = if let Some(ground) = viable_ground.last() {
+ 
+            //upright.spring.damping = 0.1;
+    
+            
+            //is this right !? 
+            let damping = Vec3::new(
+                upright.spring.damp_coefficient(mass.inertia().x),
+                upright.spring.damp_coefficient(mass.inertia().y),
+                upright.spring.damp_coefficient(mass.inertia().z),
+            );
+
+            let ground_rot = if let Some(ground) = ground_cast.last() {
+ 
                 ground.angular_velocity
             } else {
                 Vec3::ZERO
             };
 
+ 
             let local_velocity = velocity.angular - ground_rot;
             let projected_vel = if local_velocity.length() > 0.0 && desired_axis.length() > 0.0 {
                 local_velocity.project_onto(desired_axis)
@@ -159,6 +196,9 @@ pub fn upright_force(
                 Vec3::ZERO
             };
             */
+ 
+            let velocity = velocity.angular() - ground_rot;
+ 
 
             let spring = (desired_axis * upright.spring.strength.get(mass.inertia))
                 - (velocity.angular * damping);

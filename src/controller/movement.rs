@@ -3,6 +3,13 @@ use crate::{controller::*, spring::Strength};
 /// Movements applied via inputs.
 ///
 /// This includes directional movement and jumping.
+ 
+//use bevy_rapier3d::prelude::*;
+
+use crate::backend::*;
+
+/// Settings used to determine movement impulses on this controller.
+ 
 #[derive(Component, Debug, Clone, Reflect)]
 #[reflect(Component, Default)]
 pub struct Movement {
@@ -81,9 +88,15 @@ pub fn movement_force(
         &Gravity,
         &ControllerInput,
         &GroundCast,
+ 
         &ViableGroundCast,
         &ControllerVelocity,
         &ControllerMass,
+ 
+       // &GroundCaster,
+      //  Velocity,
+      //  Mass,
+ 
     )>,
     globals: Query<&GlobalTransform>,
     masses: Query<&ReadMassProperties>,
@@ -105,6 +118,7 @@ pub fn movement_force(
     {
         force.linear = Vec3::ZERO;
 
+ 
         let force_scale = movement.force_scale(&gravity);
 
         let input_dir = input.movement.clamp_length_max(1.0);
@@ -124,6 +138,22 @@ pub fn movement_force(
 
                 // Pushing to force the controller down the slope
                 Some(slip_vector)
+ /*
+        let Some(ground) = cast.last() else { continue };
+        let ground_angle = ground.cast.normal.angle_between(gravity.up_vector);
+        let slipping = (ground.cast.normal.length() > 0.0
+            && ground_angle > ground_caster.max_ground_angle)
+            || ground.cast.normal.length() == 0.0;
+        if slipping {
+            if let GroundCast::Touching(ground) = cast {
+                let mut slip_vector = ground.cast.normal.reject_from_normalized(gravity.up_vector);
+                slip_vector = slip_vector.normalize_or_zero();
+                force.linear += slip_vector * -gravity.acceleration;
+                force.linear += gravity.up_vector * gravity.acceleration * 5.0;
+ */
+            
+            
+            
             }
             _ => None,
         };
@@ -145,8 +175,22 @@ pub fn movement_force(
             let projected_angular = ground.angular_velocity.project_onto(gravity.up_vector);
             ground.linear_velocity + projected_angular.cross(ground.cast.point - com)
         } else {
+ 
             Vec3::ZERO
         };
+ /*
+            let input_dir = input.movement.clamp_length_max(1.0);
+            let input_goal_vel = input_dir * movement.max_speed;
+            let goal_vel = input_goal_vel;
+            let current_vel = velocity.linear() - ground.linear_velocity;
+
+            let displacement = (goal_vel - current_vel) * movement.force_scale;
+            force.linear += (displacement * movement.acceleration)
+                .clamp_length_max(movement.max_acceleration_force);
+        }
+    }
+}
+*/
 
         let relative_velocity = (velocity.linear - last_ground_vel) * force_scale;
         let friction_coefficient = if let Some(ground) = viable_ground.current() {
@@ -351,12 +395,20 @@ pub fn jump_force(
         &ViableGroundCast,
         &Grounded,
         &Gravity,
+ 
         &ControllerVelocity,
         &ControllerMass,
+ 
+       // Velocity,
+ 
     )>,
-    ctx: Res<RapierContext>,
+    time: Res<Time>,
 ) {
-    let dt = ctx.integration_parameters.dt;
+ 
+   // let dt = ctx.integration_parameters.dt;
+ 
+    let dt = time.delta_seconds();
+ 
     for (
         mut force,
         mut float_force,
@@ -402,9 +454,15 @@ pub fn jump_force(
             // Negating the current velocity increases consistency for falling jumps,
             // and prevents stacking jumps to reach high upwards velocities
             let initial_jump_force = jumping.initial_force * gravity.up_vector;
+ 
             let negate_up_velocity =
                 (-1.0 * gravity.up_vector * velocity.dot(gravity.up_vector)) * mass.mass / dt;
             force.linear += negate_up_velocity + initial_jump_force;
+ /*
+            let negate_velocity =
+                (-1.0 * gravity.up_vector * velocity.linear().dot(gravity.up_vector)) / dt;
+            force.linear = negate_velocity + initial_jump_force;
+*/
 
             gravity_force.linear = Vec3::ZERO;
             float_force.linear = Vec3::ZERO;

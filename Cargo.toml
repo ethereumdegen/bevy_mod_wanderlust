@@ -13,9 +13,14 @@ repository = "https://github.com/PROMETHIA-27/bevy_mod_wanderlust"
 version = "0.4.0"
 
 [features]
-default = ["rapier"]
+default = ["xpbd3d"]
 debug_lines = []
-rapier = ["bevy_rapier3d"]
+rapier = []
+rapier3d = ["rapier", "bevy_rapier3d"]
+rapier2d = ["rapier", "bevy_rapier2d"]
+xpbd = []
+xpbd3d = ["xpbd", "bevy_xpbd_3d"]
+xpbd2d = ["xpbd", "bevy_xpbd_2d"]
 
 [dependencies]
 bevy = { version = "0.11", default-features = false, features = [
@@ -26,13 +31,18 @@ bevy_rapier3d = { version = "0.22", default-features = false, features = [
     "async-collider",
     "dim3",
 ], optional = true }
+bevy_rapier2d = { version = "0.22", default-features = false, features = [
+    "async-collider",
+    "dim2",
+], optional = true }
+bevy_xpbd_3d = { version = "0.2", optional = true }
+bevy_xpbd_2d = { version = "0.2", optional = true }
+nalgebra = "0.32.3"
 
 [dev-dependencies]
 bevy = "0.11"
 aether_spyglass = "0.2"
-bevy-inspector-egui = "0.19"
-bevy_framepace = "0.13"
-bevy_rapier3d = { version = "0.22", features = ["debug-render"] }
+#bevy_rapier3d = { version = "0.22", features = ["debug-render"] }
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
@@ -41,7 +51,3 @@ opt-level = 1
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
 [profile.dev.package."*"]
 opt-level = 3
-
-
-[patch.crates-io]
-bevy_rapier3d = { path = "../bevy_rapier/bevy_rapier3d" }

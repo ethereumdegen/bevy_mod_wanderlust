@@ -1,6 +1,6 @@
-use crate::{controller::*, physics::*};
+
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::*;
+use super::rapier::prelude::*;
 
 /// Contains common physics settings for character controllers.
 #[derive(Bundle)]
@@ -58,6 +58,7 @@ impl Default for RapierPhysicsBundle {
         }
     }
 }
+ 
 
 /// Apply forces to the controller to make it float, move, jump, etc.
 pub fn apply_forces(
@@ -103,4 +104,4 @@ pub fn get_velocity_from_rapier(mut query: Query<(&mut ControllerVelocity, &Velo
         vel.linear = rapier_vel.linvel;
         vel.angular = rapier_vel.angvel;
     }
-}
+} 
