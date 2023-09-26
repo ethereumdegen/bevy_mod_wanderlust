@@ -1,6 +1,9 @@
 use crate::controller::*;
 use crate::SpringStrength;
 
+crate::spring::SpringStrength;
+
+
 /// Keeps the controller properly oriented in a floating state.
 #[derive(Component, Reflect)]
 #[reflect(Component, Default)]

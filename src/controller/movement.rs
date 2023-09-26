@@ -1,3 +1,5 @@
+use bevy_xpbd_3d::prelude::{Mass, Friction,DeltaTime, CenterOfMass};
+
 use crate::{controller::*, spring::Strength};
 
 /// Movements applied via inputs.
@@ -80,7 +82,7 @@ pub struct MovementForce {
 
 /// Calculates the movement forces for this controller.
 pub fn movement_force(
-    ctx: Res<RapierContext>,
+   // ctx: Res<RapierContext>,
     mut query: Query<(
         Entity,
         &mut MovementForce,
@@ -99,11 +101,13 @@ pub fn movement_force(
  
     )>,
     globals: Query<&GlobalTransform>,
-    masses: Query<&ReadMassProperties>,
+    masses: Query<(&Mass, &CenterOfMass)>,
     frictions: Query<&Friction>,
+    
+    delta_time: Res<DeltaTime> 
     //mut gizmos: Gizmos,
 ) {
-    let dt = ctx.integration_parameters.dt;
+   let dt = delta_time.0;
     for (
         controller_entity,
         mut force,
@@ -118,7 +122,6 @@ pub fn movement_force(
     {
         force.linear = Vec3::ZERO;
 
- 
         let force_scale = movement.force_scale(&gravity);
 
         let input_dir = input.movement.clamp_length_max(1.0);
@@ -138,22 +141,6 @@ pub fn movement_force(
 
                 // Pushing to force the controller down the slope
                 Some(slip_vector)
- /*
-        let Some(ground) = cast.last() else { continue };
-        let ground_angle = ground.cast.normal.angle_between(gravity.up_vector);
-        let slipping = (ground.cast.normal.length() > 0.0
-            && ground_angle > ground_caster.max_ground_angle)
-            || ground.cast.normal.length() == 0.0;
-        if slipping {
-            if let GroundCast::Touching(ground) = cast {
-                let mut slip_vector = ground.cast.normal.reject_from_normalized(gravity.up_vector);
-                slip_vector = slip_vector.normalize_or_zero();
-                force.linear += slip_vector * -gravity.acceleration;
-                force.linear += gravity.up_vector * gravity.acceleration * 5.0;
- */
-            
-            
-            
             }
             _ => None,
         };
@@ -165,32 +152,18 @@ pub fn movement_force(
                 .get(ground.entity)
                 .unwrap_or(&GlobalTransform::IDENTITY);
 
-            let ground_mass = if let Ok(mass) = masses.get(ground.entity) {
-                mass.0.clone()
+            let (ground_mass, center_of_mass) = if let Ok( (ground_mass, center_of_mass) ) = masses.get(ground.entity) {
+                (ground_mass.0.clone(), center_of_mass.0.clone() )
             } else {
-                MassProperties::default()
+                (Mass::default().0 , CenterOfMass::default().0 )
             };
 
-            let com = ground_global.transform_point(ground_mass.local_center_of_mass);
+            let com = ground_global.transform_point( center_of_mass );
             let projected_angular = ground.angular_velocity.project_onto(gravity.up_vector);
             ground.linear_velocity + projected_angular.cross(ground.cast.point - com)
         } else {
- 
             Vec3::ZERO
         };
- /*
-            let input_dir = input.movement.clamp_length_max(1.0);
-            let input_goal_vel = input_dir * movement.max_speed;
-            let goal_vel = input_goal_vel;
-            let current_vel = velocity.linear() - ground.linear_velocity;
-
-            let displacement = (goal_vel - current_vel) * movement.force_scale;
-            force.linear += (displacement * movement.acceleration)
-                .clamp_length_max(movement.max_acceleration_force);
-        }
-    }
-}
-*/
 
         let relative_velocity = (velocity.linear - last_ground_vel) * force_scale;
         let friction_coefficient = if let Some(ground) = viable_ground.current() {
