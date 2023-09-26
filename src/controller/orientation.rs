@@ -1,7 +1,8 @@
 use crate::controller::*;
-use crate::SpringStrength;
+//use crate::SpringStrength;
+use crate::spring::SpringStrength;
 
-crate::spring::SpringStrength;
+ 
 
 
 /// Keeps the controller properly oriented in a floating state.
