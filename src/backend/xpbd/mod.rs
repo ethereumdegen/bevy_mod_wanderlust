@@ -81,7 +81,7 @@ pub fn setup_physics_context() {}
 /// Add all forces together into a single force to be applied to the physics engine.
 pub fn accumulate_forces(
     globals: Query<&GlobalTransform>,
-    masses: Query<&xpbd_Mass>,
+    masses: Query<(&xpbd_Mass, &CenterOfMass)>,
     mut forces: Query<(
         &ForceSettings,
         &mut ControllerForce,
@@ -130,13 +130,13 @@ pub fn accumulate_forces(
                 _ => &GlobalTransform::IDENTITY,
             };
 
-            let ground_mass = if let Ok(mass) = masses.get(ground.entity) {
-                mass.0.clone()
+            let (ground_mass, center_of_mass) = if let Ok((ground_mass, center_of_mass)) = masses.get(ground.entity) {
+                (ground_mass.0.clone(), center_of_mass.0.clone())
             } else {
-                xpbd_Mass::default().0
+                (xpbd_Mass::default().0, CenterOfMass::default().0)
             };
 
-            let com = ground_global.transform_point(ground_mass.local_center_of_mass);
+            let com = ground_global.transform_point( center_of_mass );
             ground_force.linear = opposing_force;
  
             ground_force.angular = (ground.cast.point - com).cross(opposing_force);
