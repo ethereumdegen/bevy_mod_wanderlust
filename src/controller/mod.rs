@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::*;
+ 
 
 mod gravity;
 mod ground;
@@ -102,88 +102,6 @@ impl Default for ForceSettings {
         Self {
             opposing_force_scale: 1.0,
             opposing_movement_force_scale: 0.0,
-        }
-    }
-}
-
-/// Add all forces together into a single force to be applied to the physics engine.
-pub fn accumulate_forces(
-    globals: Query<&GlobalTransform>,
-    masses: Query<&ReadMassProperties>,
-    mut forces: Query<(
-        &ForceSettings,
-        &mut ControllerForce,
-        &mut GroundForce,
-        &FloatForce,
-        &UprightForce,
-        &MovementForce,
-        &JumpForce,
-        &GravityForce,
- 
-        &ViableGroundCast,
- 
-      //  &GroundCast,
-       // Mass,
- 
-    )>,
-) {
-    for (
-        settings,
-        mut force,
-        mut ground_force,
-        float,
-        upright,
-        movement,
-        jump,
-        gravity,
-        viable_ground,
-    ) in &mut forces
-    {
-        /*
-        info!(
-            "movement: {:.2?}, jump: {:.2?}, float: {:.2?}, gravity: {:.2?}",
-            movement.linear, jump.linear, float.linear, gravity.linear
-        );
-        */
-        force.linear = movement.linear + jump.linear + float.linear + gravity.linear;
-        force.angular = movement.angular + upright.angular;
-        //force.angular = movement.angular;
-
-        let opposing_force = -(movement.linear * settings.opposing_movement_force_scale
-            + (jump.linear + float.linear) * settings.opposing_force_scale);
-
-        if let Some(ground) = viable_ground.current() {
-            let ground_global = match globals.get(ground.entity) {
-                Ok(global) => global,
-                _ => &GlobalTransform::IDENTITY,
-            };
-
-            let ground_mass = if let Ok(mass) = masses.get(ground.entity) {
-                mass.0.clone()
-            } else {
-                MassProperties::default()
-            };
-
-            let com = ground_global.transform_point(ground_mass.local_center_of_mass);
-            ground_force.linear = opposing_force;
- 
-            ground_force.angular = (ground.cast.point - com).cross(opposing_force);
- 
-        //    ground_force.angular = (point - mass.local_center_of_mass()).cross(opposing_force);
- 
-
-            #[cfg(feature = "debug_lines")]
-            {
-                let color = if opposing_force.dot(gravity_settings.up_vector) < 0.0 {
-                    Color::RED
-                } else {
-                    Color::BLUE
-                };
-                //gizmos.line(ground.cast.point, ground.cast.point + opposing_force, color);
-            }
-        } else {
-            ground_force.linear = opposing_force;
-            ground_force.angular = Vec3::ZERO;
         }
     }
 }
